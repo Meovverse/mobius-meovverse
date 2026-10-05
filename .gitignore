@@ -5,7 +5,7 @@
 bin/
 obj/
 export.cfg
-
+.vscode/
 __pycache__/
 *.pyc
 
