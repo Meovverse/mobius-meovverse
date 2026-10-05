@@ -1,10 +1,10 @@
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
-; since the parameters below are not obvious.
+; since the parameters that go here are not all obvious.
 ;
 ; Format:
 ;   [section] ; section goes between []
-;   param=value ; assign values without a space after "="
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -12,8 +12,8 @@ config_version=5
 
 config/name="墓石"
 config/description="2D 像素 · 手感推理 · 黑色喜剧"
-config/features=PackedStringArray("4.7", "C#", "Mobile")
 run/main_scene="res://scenes/Boot.tscn"
+config/features=PackedStringArray("4.7", "C#", "Mobile")
 config/icon="res://icon.svg"
 
 [display]
@@ -29,6 +29,11 @@ window/stretch/aspect="keep"
 
 project/assembly_name="mobius-meovverse"
 
+[editor]
+
+naming/scene_name_casing=1
+naming/script_name_casing=1
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
@@ -37,9 +42,14 @@ enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
 theme/custom_font="res://assets/fonts/fusion_pixel_12px.ttf"
 
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
+rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-textures/canvas_textures/default_texture_filter=0
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)

@@ -47,10 +47,13 @@ public partial class Boot : Control
         };
         AddChild(fontStatus);
 
-        // 字体是否落地，是 M0 唯一的验收项，所以直接报在屏幕上。
         var path = ProjectSettings.GetSetting("gui/theme/custom_font").AsString();
         fontStatus.Text = ResourceLoader.Exists(path)
             ? $"字体已加载：{path.GetFile()}"
             : "字体未加载 —— 请把 fusion_pixel_12px.ttf 放到 assets/fonts/";
+
+        // 美术资产接管：来了就用，修正后用，没来就程序生成。任何情况都不崩。
+        Core.AssetIntake.Warmup();
+        Core.AssetIntake.Report.ForEach(GD.Print);
     }
 }

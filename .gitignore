@@ -4,6 +4,8 @@
 /android/
 bin/
 obj/
+opencode.json
+tools/godot.sh
 export.cfg
 .vscode/
 __pycache__/
