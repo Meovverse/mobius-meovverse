@@ -1,23 +1,29 @@
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
-; since the parameters that go here are not all obvious.
+; since the parameters below are not obvious.
 ;
 ; Format:
 ;   [section] ; section goes between []
-;   param=value ; assign values to parameters
+;   param=value ; assign values without a space after "="
 
 config_version=5
 
 [application]
 
-config/name="mobius-meovverse"
-config/features=PackedStringArray("4.7", "Mobile")
+config/name="墓石"
+config/description="2D 像素 · 手感推理 · 黑色喜剧"
+config/features=PackedStringArray("4.7", "C#", "Mobile")
+run/main_scene="res://scenes/Boot.tscn"
 config/icon="res://icon.svg"
 
 [display]
 
-window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
 
 [dotnet]
 
@@ -27,11 +33,13 @@ project/assembly_name="mobius-meovverse"
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
-[physics]
+[gui]
 
-3d/physics_engine="Jolt Physics"
+theme/custom_font="res://assets/fonts/fusion_pixel_12px.ttf"
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
-renderer/rendering_method="mobile"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)

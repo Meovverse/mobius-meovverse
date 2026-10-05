@@ -5,3 +5,11 @@
 bin/
 obj/
 export.cfg
+
+__pycache__/
+*.pyc
+
+# SD 原始草图（不进版本库；只提交过了像素化管线的成品）
+raw/
+palette_*.png
+palette_*.gpl
