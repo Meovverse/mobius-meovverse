@@ -63,6 +63,23 @@ public static class AudioIndex
             "★ 5.94s vs 需求 0.6s——多 take 连交了吧？需要音频岗裁一刀；峰值又偏轻。暂不接入播放"),
         new("sfx_pen_write",    "res://assets/audio/sfx_pen_write.wav",    Bus.Sfx, Tier.S1, -22.9f,
             "时长 1.18s 合理；偏轻 8.9dB（补偿只压不抬，等重导补齐）"),
+        // ── 第三批交付（merge c05d768，11 件 B_/C_/D_ 前缀 → 已全部转规范名）。
+        //    ★ D8_sfx_wheelchair 是文档标了封存仍交上来的：已拒删，见 音频岗需求 §六之三。──
+        new("sfx_write_confirm", "res://assets/audio/sfx_write_confirm.wav", Bus.Sfx, Tier.S1, -18.0f, "账本落笔确认。达标"),
+        new("sfx_paper_tear",    "res://assets/audio/sfx_paper_tear.wav",    Bus.Sfx, Tier.S2, -6.5f, "超 S2 档 1.5dB，播放端压回"),
+        new("sfx_paper_burn",    "res://assets/audio/sfx_paper_burn.wav",    Bus.Sfx, Tier.S2, -21.1f,
+            "★ 需求 2.0s 实交 5.96s（有效 4.28s）、还偏轻 13dB——请复听裁剪"),
+        new("sfx_caliper_lock",  "res://assets/audio/sfx_caliper_lock.wav",  Bus.Sfx, Tier.S1, -7.3f, "超档 6.7dB；'咔'短促达标"),
+        new("sfx_hammer_chisel", "res://assets/audio/sfx_hammer_chisel.wav", Bus.Sfx, Tier.S2, -7.7f,
+            "★ 需求 0.4s 实交有效 2.89s——多敲了几下？单发请裁"),
+        new("sfx_hammer_swing",  "res://assets/audio/sfx_hammer_swing.wav",  Bus.Sfx, Tier.S2, -11.4f, "挥空风声，达标"),
+        new("sfx_shovel_scrape", "res://assets/audio/sfx_shovel_scrape.wav", Bus.Sfx, Tier.S2, -17.6f, "剧本绑定件提前交，先收；偏轻 9.6dB"),
+        new("sfx_camera_shutter", "res://assets/audio/sfx_camera_shutter.wav", Bus.Sfx, Tier.S2, -1.5f,
+            "★ 全篇最响文件，超档 6.5dB——快门理应盖不过砸锤，播放端强制压回"),
+        new("sfx_crowd_murmur",  "res://assets/audio/sfx_crowd_murmur.wav",  Bus.Ambience, Tier.Amb, -26.4f,
+            "25s 人群低语，按环境量级收（走 Ambience 总线）；终章清明用"),
+        new("sfx_tear_stop",     "res://assets/audio/sfx_tear_stop.wav",     Bus.Sfx, Tier.S2, -6.0f,
+            "★ 需求文档里没有这个 ID——按名猜是撕纸的'停'尾（配 sfx_paper_tear 用）。已入库备用，用途请音频岗确认"),
         new("title_theme",      "res://assets/audio/title_theme.ogg",      Bus.Music, Tier.Music, -18.8f,
             "★ 标题画面专属——'全篇没有BGM'的唯一例外（2026-10-06 拍板）。" +
             "源为 18.4MB 48kHz WAV，已重编码 192k vorbis（64s/1MB）；进游戏即停，正文永不响"),
