@@ -40,6 +40,13 @@ public partial class Boot : Control
         };
         AddChild(info);
 
+        var hint = new Label
+        {
+            Position = new Vector2(24, 114),
+            Size = new Vector2(592, 24),
+        };
+        AddChild(hint);
+
         var fontStatus = new Label
         {
             Position = new Vector2(24, 84),
@@ -52,8 +59,20 @@ public partial class Boot : Control
             ? $"字体已加载：{path.GetFile()}"
             : "字体未加载 —— 请把 fusion_pixel_12px.ttf 放到 assets/fonts/";
 
-        // 美术资产接管：来了就用，修正后用，没来就程序生成。任何情况都不崩。
-        Core.AssetIntake.Warmup();
-        Core.AssetIntake.Report.ForEach(GD.Print);
+        // ★ 槽位登记表：美术要做的只剩 7 张，其余全部程序生成。
+        //   这是 doc/美术需求.md 的机器可读版本，两边不一致时以代码为准。
+        Core.ProcGen.CachedFont = ThemeDB.FallbackFont;
+        if (ResourceLoader.Exists(path))
+            Core.ProcGen.CachedFont = ResourceLoader.Load<Font>(path);
+
+        Core.SlotRegistry.Install();
+        GD.Print(Core.SlotRegistry.Audit());
+
+        // 试取全部槽位，验证没有一张会返回 null，并看看 AssetIntake 修正了什么
+        foreach (var slot in Core.SlotRegistry.All)
+            _ = Core.AssetIntake.Get(slot.Key);
+        GD.Print(Core.AssetIntake.DumpReport());
+
+        hint.Text = "F3 = 资产对账";
     }
 }

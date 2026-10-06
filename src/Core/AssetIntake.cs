@@ -116,7 +116,9 @@ public static class AssetIntake
                 ? cached
                 : throw new InvalidOperationException($"重复初始化 {key}");
 
-        var img = FromAsset(rule, key) ?? (rule.Procedural?.Invoke() ?? null);
+        var img = FromAsset(rule, key);
+        bool fromArt = img != null;
+        img ??= rule.Procedural?.Invoke();
         if (img == null)
         {
             Report.Add($"!! {key} 既没有美术资产也没有程序实现，用纯黑顶替");
@@ -124,7 +126,7 @@ public static class AssetIntake
             img.Fill(new Color(0, 0, 0));
         }
 
-        img = Sanitize(img, rule, key);
+        img = Sanitize(img, rule, key, fromArt);
         var tex = ImageTexture.CreateFromImage(img);
         _cache[key] = tex;
         return tex;
@@ -182,7 +184,7 @@ public static class AssetIntake
 
     // ── 修正 ────────────────────────────────────────────────────────────
 
-    private static Image Sanitize(Image img, Rule rule, string key)
+    private static Image Sanitize(Image img, Rule rule, string key, bool fromArt)
     {
         int w = rule.Kind == Kind.Mask ? img.GetWidth() : rule.W;
         int h = rule.Kind == Kind.Mask ? img.GetHeight() : rule.H;
@@ -225,10 +227,15 @@ public static class AssetIntake
         }
 
         // ④ 噪声图无缝
-        if (rule.Kind == Kind.Noise)
+        //
+        // ★ 只对**美术交的图**做这道修正。
+        //   程序生成的噪声本来就是周期的（用周期函数而非 Math.Random 构造），
+        //   拿"边缘均值 vs 内侧均值"这种启发式去测它只会随机误报，
+        //   一旦误报就会触发镜像折叠，把精心设计的刀口纹理毁掉一半。
+        if (rule.Kind == Kind.Noise && fromArt)
         {
             float seam = MeasureSeam(img);
-            if (seam > 0.02f)
+            if (seam > 0.15f)
             {
                 MakeSeamless(img);
                 Report.Add($"修正 {key}：接缝 {seam:F3} → 已强制无缝");
@@ -304,15 +311,57 @@ public static class AssetIntake
         }
     }
 
+    /// <summary>
+    /// 接缝检测。
+    ///
+    /// ★ 早先用"首末两列逐像素比差"来判断，结果**把白噪声全判成有接缝**，
+    ///   然后触发镜像折叠，把精心设计的刀口纹理毁了一半。
+    ///
+    ///   白噪声相邻像素本来就不该连续，所以逐像素比对对这个项目毫无意义。
+    ///   真正的接缝是**系统性的**（边缘整体偏亮/偏暗、渐变被切断），
+    ///   所以改成：边缘列的均值 vs 紧邻内侧几列的均值。
+    /// </summary>
     private static float MeasureSeam(Image img)
     {
         int w = img.GetWidth(), h = img.GetHeight();
-        float dx = 0, dy = 0;
-        for (int y = 0; y < h; y++)
-            dx = MathF.Max(dx, Math.Abs(img.GetPixel(0, y).R - img.GetPixel(w - 1, y).R));
-        for (int x = 0; x < w; x++)
-            dy = MathF.Max(dy, Math.Abs(img.GetPixel(x, 0).R - img.GetPixel(x, h - 1).R));
-        return MathF.Max(dx, dy);
+        int band = Mathf.Max(2, Mathf.Min(4, Mathf.Min(w, h) / 8));
+
+        float SeamAxis(bool horizontal)
+        {
+            int n = horizontal ? h : w;
+            float edgeA = 0, edgeB = 0, inner = 0;
+            int innerN = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (horizontal)
+                {
+                    edgeA += img.GetPixel(0, i).R;
+                    edgeB += img.GetPixel(w - 1, i).R;
+                    for (int k = 1; k <= band; k++)
+                    {
+                        inner += img.GetPixel(k, i).R;
+                        inner += img.GetPixel(w - 1 - k, i).R;
+                        innerN += 2;
+                    }
+                }
+                else
+                {
+                    edgeA += img.GetPixel(i, 0).R;
+                    edgeB += img.GetPixel(i, h - 1).R;
+                    for (int k = 1; k <= band; k++)
+                    {
+                        inner += img.GetPixel(i, k).R;
+                        inner += img.GetPixel(i, h - 1 - k).R;
+                        innerN += 2;
+                    }
+                }
+            }
+            if (n == 0 || innerN == 0) return 0f;
+            edgeA /= n; edgeB /= n; inner /= innerN;
+            return MathF.Max(MathF.Abs(edgeA - inner), MathF.Abs(edgeB - inner));
+        }
+
+        return MathF.Max(SeamAxis(true), SeamAxis(false));
     }
 
     /// <summary>镜像折叠：右半边盖到左半边，下半边盖到上半边。便宜、有效。</summary>

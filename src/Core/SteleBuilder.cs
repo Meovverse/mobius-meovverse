@@ -156,6 +156,19 @@ public static class SteleBuilder
         return slots;
     }
 
+    /// <summary>批次 ID 图（R 通道）。程序推导，美术不用做。</summary>
+    public static Image BuildBatchMap()
+    {
+        var sm = LoadBaked();
+        var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
+        if (sm != null)
+            for (int i = 0; i < sm.BatchMap.Length; i++)
+                img.SetPixel(i % W, i / W, new Color(sm.BatchMap[i] / 255f, 0, 0, 1));
+        else
+            img.Fill(new Color(0, 0, 0, 1));
+        return img;
+    }
+
     /// <summary>已烘好的遮罩路径。存在就直接读，不做运行时烘焙。</summary>
     public const string BakedPath = "res://data/gen/stele_glyphs.png";
 

@@ -53,6 +53,34 @@ public static class ProcGen
         return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fy);
     }
 
+    // ── 给 Art / SteleBuilder 用的公开图元 ──────────────────────────────
+
+    /// <summary>可平铺散列值，给别的类用。</summary>
+    public static float TileValueFor(int x, int y, int seed) => TileValue(x, y, 256, seed);
+
+    /// <summary>可平铺值噪声，给别的类用。</summary>
+    public static float TileNoiseFor(int x, int y, int period, int seed) => TileNoise(x, y, period, seed);
+
+    /// <summary>空白透明图。</summary>
+    public static Image NewTransparent(int w, int h) => NewImage(w, h);
+
+    /// <summary>项目字体。启动时设一次，供需要画字的地方使用。</summary>
+    public static Font? CachedFont { get; set; }
+
+    private static Image? _chiselA, _chiselB;
+    private static Image? _dustN, _fiberN, _stoneN, _cementN;
+
+    /// <summary>刀口 A（陆昀那把錾子），缓存复用。</summary>
+    public static Image ChiselA => _chiselA ??= ChiselA_();
+
+    /// <summary>刀口 B（补刻），缓存复用。</summary>
+    public static Image ChiselB => _chiselB ??= ChiselB_();
+
+    public static Image DustNoise => _dustN ??= Dust_();
+    public static Image FiberNoise => _fiberN ??= PaperFiber_();
+    public static Image StoneNoise => _stoneN ??= StoneGrain_();
+    public static Image CementNoise => _cementN ??= CementNoise_();
+
     /// <summary>给别的类用的可平铺分形噪声。</summary>
     public static float FractalAccessor(int x, int y, int period, int seed, int octaves)
         => Fractal(x, y, period, seed, octaves);
@@ -103,7 +131,7 @@ public static class ProcGen
     // ── 噪声图 ──────────────────────────────────────────────────────────
 
     /// <summary>石材颗粒：低频斑块 + 高频 1px 颗粒。64×64 可平铺。</summary>
-    public static Image StoneGrain()
+    private static Image StoneGrain_()
     {
         const int S = 64;
         var img = NewImage(S, S);
@@ -127,7 +155,7 @@ public static class ProcGen
     ///   · 边缘有 1px 的翻起毛边，**全部朝同一个方向**（右）
     ///   · 密度中等、亮度均匀
     /// </summary>
-    public static Image ChiselA()
+    private static Image ChiselA_()
     {
         const int S = 32;
         var img = NewImage(S, S);
@@ -161,7 +189,7 @@ public static class ProcGen
     ///   · 毛边**两个方向都有** ← 这是"不是同一个人同一把錾子"的硬证据
     ///   · 有崩口（黑缺口）、密度更高、亮度不匀
     /// </summary>
-    public static Image ChiselB()
+    private static Image ChiselB_()
     {
         const int S = 32;
         var img = NewImage(S, S);
@@ -189,7 +217,7 @@ public static class ProcGen
     }
 
     /// <summary>石粉：稀疏白点，1px 为主，少量 2px 团。32×32 可平铺。</summary>
-    public static Image Dust()
+    private static Image Dust_()
     {
         const int S = 32;
         var img = NewImage(S, S);
@@ -206,7 +234,7 @@ public static class ProcGen
     }
 
     /// <summary>纸纤维：横向拉丝，稀疏，每 6–10px 一根。64×64 可平铺。</summary>
-    public static Image PaperFiber()
+    private static Image PaperFiber_()
     {
         const int S = 64;
         var img = NewImage(S, S);
@@ -223,7 +251,7 @@ public static class ProcGen
     }
 
     /// <summary>水泥：砂粒 + 2px 气孔。64×64 可平铺。</summary>
-    public static Image CementNoise()
+    private static Image CementNoise_()
     {
         const int S = 64;
         var img = NewImage(S, S);
@@ -442,11 +470,15 @@ public static class ProcGen
 
     // ── 粒子 ────────────────────────────────────────────────────────────
 
+    private static Image? _dustP, _chipP;
+
     /// <summary>石粉粒子（1px 硬边白点）。</summary>
-    public static Image DustParticle() => Dot(0xd8d8d0);
+    public static Image DustParticle => _dustP ??= Dot(0xd8d8d0);
 
     /// <summary>水泥碎屑粒子（不规则碎片）。</summary>
-    public static Image CementChip()
+    public static Image CementChip => _chipP ??= CementChip_();
+
+    private static Image CementChip_()
     {
         const int S = 8;
         var img = NewImage(S, S);
