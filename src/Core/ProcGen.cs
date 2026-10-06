@@ -534,14 +534,27 @@ public static class ProcGen
             {
                 // 枯草
                 float t = (float)(y - horizon) / (h - horizon);
-                float n = Fractal(x, y, Math.Max(2, w / 5), 3, 2);
-                col = (t * 0.35f + n * 0.3f) > 0.42f ? Rgb(138, 130, 98)
-                   : (t * 0.35f + n * 0.3f) > 0.24f ? Rgb(110, 104, 78)
-                   : Rgb(85, 80, 60);
+                // 低频起伏用正弦而不是 Fractal：Fractal 的实际取值范围没保证，
+                // 试过 128/58/16/32 四种周期，出来要么是一片平板、要么是方块棋盘。
+                // 正弦的值域是确定的 [0,1]，低频斑驳交给它。
+                float n = 0.5f + 0.5f * Mathf.Sin(x * 0.031f + y * 0.017f)
+                                     * Mathf.Cos(x * 0.011f - y * 0.023f);
+                // 再叠一层逐像素抖动，把 16px 晶格之间的平滑过渡打碎
+                uint hh = (uint)(x * 73856093) ^ (uint)(y * 19349663);
+                hh ^= hh >> 13; hh *= 0x5bd1e995u; hh ^= hh >> 15;
+                float dith = (hh & 0xFFFF) / 65535f;
+                // 枯草：留一点暖色免得画面死掉，但不能暖到跟灰阶场景脱节。
+                // 用连续插值而不是硬阈值分三档——硬阈值在低频噪声上会出来一块块方斑。
+                // v 要钳位：Fractal 叠三个倍频会超过 1，Lerp 权重越界后颜色会冲成白块
+                float v = Mathf.Clamp(0.40f + t * 0.24f + (n - 0.5f) * 0.24f + (dith - 0.5f) * 0.10f, 0f, 1f);
+                col = v < 0.30f
+                    ? Rgb(76, 76, 65).Lerp(Rgb(100, 99, 84), Mathf.Clamp(v / 0.30f, 0f, 1f))
+                    : Rgb(100, 99, 84).Lerp(Rgb(126, 124, 106), Mathf.Clamp((v - 0.30f) / 0.35f, 0f, 1f));
             }
             img.SetPixel(x, y, col);
         }
 
+        DrawFarLayer(img, w, horizon);
         DrawSteleRow(img, w, horizon);
         return img;
     }
@@ -554,30 +567,134 @@ public static class ProcGen
     ///   没有素材时退回程序生成的粗糙剪影（几个灰矩形）。
     /// </summary>
     /// <summary>
+    /// 地平线以上的远景层。
+    ///
+    /// 用俯视素材 <c>地图/墓地.png</c> 顶部横带（y 0..336，避开教堂/水井/邮筒/雏菊）
+    /// 缩到 640 宽，去色、压对比、竖向渐变、轻微模糊之后当大气远景。
+    /// 原图是俯视地图，直接当背景会和"平视读碑面"的玩法打架；
+    /// 这么处理之后它不再读作俯视，只是一层雾里的远景——所以能留。
+    /// </summary>
+    private static void DrawFarLayer(Image img, int w, int horizon)
+    {
+        var path = "res://assets/textures/bg_graveyard_far.png";
+        if (!ResourceLoader.Exists(path)) return;
+        var far = ResourceLoader.Load<Texture2D>(path)?.GetImage();
+        if (far == null) return;
+        far.Convert(Image.Format.Rgba8);
+
+        int fh = Math.Min(far.GetHeight(), horizon);
+        // BlitRect 是 C 层整块拷贝；逐像素 SetPixel 要跑 14 万次，没必要。
+        img.BlitRect(far, new Rect2I(0, 0, far.GetWidth(), fh), new Vector2I(0, horizon - fh));
+
+        // 远景比天空矮时，用它的顶行往上补满，否则地平线以上会留一条硬边
+        int top = horizon - fh;
+        for (int y = 0; y < top; y++)
+        {
+            var row = far.GetPixel(0, 0);
+            for (int x = 0; x < w; x++) img.SetPixel(x, y, row);
+        }
+
+        // 远景底部和地平线之间压一道渐变，避免出现一条硬边
+        for (int i = 0; i < 10; i++)
+        {
+            float t = i / 9f;
+            var c = img.GetPixel(w / 2, horizon - 10 + i);
+            float k = 0.86f + 0.14f * t;
+            var row = new Color(c.R * k, c.G * k, c.B * k, 1f);
+            for (int x = 0; x < w; x++) img.SetPixel(x, horizon - 10 + i, row);
+        }
+    }
+
+    /// <summary>
     /// 墓园背景里地平线上的那一排碑。
     ///
-    /// ★ 目前只有程序剪影。之前试过把 gamejam 素材里俯视地图抠出的墓碑
-    ///   （assets/textures/stele_bg_01..04.png，已经抠好、抠像干净）铺进来，
-    ///   但逐像素拷贝进 Image 之后一个像素都没落到画面上，
-    ///   资源读取和 alpha 都已经验过是对的，卡在合成环节，未解决。
-    ///   那 4 张图本身是可用的美术资源，别删；等合成通了直接接上。
+    /// 墓碑本体是从俯视素材 <c>地图/墓地.png</c> 里抠出来的真实像素
+    /// （<c>assets/textures/stele_bg_01..04.png</c>，已转灰阶+抠成透明背景）。
+    /// 整张地图不作为背景——视角/色彩/气氛/比例都对不上，只有碑能用。
+    ///
+    /// ★ 这里有两个静默到不报错的坑，都踩过：
+    ///   1) <c>new Color(0xd8, 0xd8, 0xd0)</c> 的参数是 0–1 浮点，216 会钳成 1.0 → 全白。要用 <see cref="Rgb"/>。
+    ///   2) <c>Color.A</c> 是 0–1 浮点。写 <c>c.A &lt; 128</c> 判断透明会<b>恒为真</b>，
+    ///      结果每个像素都被跳过，一个碑都画不出来。判断透明一律用 <c>0.5f</c>。
     /// </summary>
     private static void DrawSteleRow(Image img, int w, int horizon)
     {
+        var stones = new System.Collections.Generic.List<Image>();
+        for (int i = 1; i <= 4; i++)
+        {
+            var path = $"res://assets/textures/stele_bg_{i:00}.png";
+            if (!ResourceLoader.Exists(path)) continue;
+            var im = ResourceLoader.Load<Texture2D>(path)?.GetImage();
+            if (im == null) continue;
+            im.Convert(Image.Format.Rgba8);
+            stones.Add(im);
+        }
+
+        if (stones.Count == 0)
+        {
+            DrawProceduralSteles(img, w, horizon);
+            return;
+        }
+
+        // 原生尺寸铺，不缩放——缩放要重采样，这 28×52 的小图不值得引入那点误差。
+        // 每三块留一块当"远处"，压暗并拉开间距，做出纵深。
+        int cursor = -12, idx = 0;
+        while (cursor < w)
+        {
+            var st = stones[idx % stones.Count];
+            bool far = idx % 3 == 0;
+            int sw = st.GetWidth(), sh = st.GetHeight();
+            int baseY = horizon - sh - (far ? 5 : 0);
+            float k = far ? 0.72f : 1f;
+
+            // 落地阴影：没有它碑会浮在地平线上，看起来像贴图而不是站在土里
+            for (int px = 0; px < sw; px++)
+            {
+                int tx = cursor + px;
+                if (tx < 0 || tx >= w) continue;
+                var below = st.GetPixel(px, sh - 1);
+                if (below.A < 0.5f) continue;      // 只在碑正下方才有影
+                float spread = far ? 0.82f : 0.92f;
+                img.SetPixel(tx, baseY + sh, new Color(0.24f, 0.23f, 0.18f, 1f));
+                if ((px * 100 / sw) % 100 < spread * 100)
+                    img.SetPixel(tx, baseY + sh + (far ? 0 : 1), new Color(0.30f, 0.29f, 0.23f, 1f));
+            }
+
+            for (int py = 0; py < sh; py++)
+            {
+                int ty = baseY + py;
+                if (ty < 0 || ty >= img.GetHeight()) continue;
+                for (int px = 0; px < sw; px++)
+                {
+                    int tx = cursor + px;
+                    if (tx < 0 || tx >= w) continue;
+                    var c = st.GetPixel(px, py);
+                    if (c.A < 0.5f) continue;
+                    img.SetPixel(tx, ty, new Color(c.R * k, c.G * k, c.B * k, 1f));
+                }
+            }
+
+            cursor += far ? sw + 22 : sw + 6;
+            idx++;
+        }
+    }
+
+    /// <summary>抠像素材缺失时的兜底：两排程序剪影，后排矮而淡、前排高而实。</summary>
+    private static void DrawProceduralSteles(Image img, int w, int horizon)
+    {
         var rng = new Random(20060517);
-        // 两排：后排矮而淡，前排高而实，做出纵深
+        var stone = Rgb(106, 106, 104);
         for (int pass = 0; pass < 2; pass++)
         {
+            int y = horizon - (pass == 0 ? 4 : 0);
             int thMin = pass == 0 ? 20 : 30;
             int thMax = pass == 0 ? 34 : 54;
             float k = pass == 0 ? 0.62f : 1f;
-            int y = horizon - (pass == 0 ? 4 : 0);
             for (int i = 0; i < (pass == 0 ? 26 : 18); i++)
             {
                 int tx = rng.Next(-8, w);
                 int tw = rng.Next(8, 18);
                 int th = rng.Next(thMin, thMax);
-                var stone = Rgb(106, 106, 104);
                 for (int py = y - th; py < y; py++)
                 for (int px = tx; px < tx + tw && px < w; px++)
                 {

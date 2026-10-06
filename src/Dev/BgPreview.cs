@@ -54,7 +54,7 @@ public partial class BgPreview : Control
             for (int x = 0; x < small.GetWidth() && 4 + x < 320; x++)
             {
                 var c = small.GetPixel(x, y);
-                if (c.A < 128) continue;
+                if (c.A < 0.5f) continue;
                 sheet.SetPixel(4 + x, yy + y, new Color(c.R, c.G, c.B, 1));
             }
             yy += small.GetHeight() + 4;
@@ -70,11 +70,11 @@ public partial class BgPreview : Control
         for (int x = 0; x < 160; x++)
         {
             var c = lu.GetPixel(x, y);
-            if (c.A > 128) chars.SetPixel(x, y, new Color(c.R, c.G, c.B, 1));
+            if (c.A > 0.5f) chars.SetPixel(x, y, new Color(c.R, c.G, c.B, 1));
             if (y < su.GetHeight())
             {
                 var c2 = su.GetPixel(x, y);
-                if (c2.A > 128) chars.SetPixel(160 + x, y, new Color(c2.R, c2.G, c2.B, 1));
+                if (c2.A > 0.5f) chars.SetPixel(160 + x, y, new Color(c2.R, c2.G, c2.B, 1));
             }
         }
         Shot("chars", chars);

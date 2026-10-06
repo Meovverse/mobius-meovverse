@@ -125,9 +125,20 @@ public static class SlotRegistry
 
         // ── C 背景：程序版能跑但很平。美术做这几张性价比最高 ──
         Add("bg_graveyard_area_A", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgGraveyard(640, 360), true, "★ 程序版只是色带+剪影；要石头的质感必须靠人/SD");
+            () => Art.BgGraveyard(640, 360), true,
+            "远景=地图/墓地.png 顶部横带重处理，中景=抠出的真碑；石头质感仍要人/SD");
         Add("bg_cemetery_qingming", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgGraveyard(640, 360), true, "★ 同上，且要和 C1 是同一个地方");
+
+        // ── 从 地图/墓地.png 复用出来的素材。都是已抠好的可用资源 ──
+        Add("plate_bg_graveyard_far", 640, 224, AssetIntake.Kind.Pixel, 12, true,
+            () => null!, false,
+            "墓地远景层：顶部横带去色+压对比+模糊。俯视原图不能直接当背景，"
+            + "这么处理后不再读作俯视，所以能留");
+        Add("plate_stele_bg_01", 28, 52, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 A");
+        Add("plate_stele_bg_02", 28, 33, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 B");
+        Add("plate_stele_bg_03", 24, 34, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 C");
+        Add("plate_stele_bg_04", 52, 35, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的宽碑 D");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光，程序版太糙");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
