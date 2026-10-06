@@ -148,7 +148,7 @@ public static class Art
 
     // ── 角色（只做剪影，因为全篇不画正脸）─────────────────────────────
 
-    /// <summary>陆昀背影：蹲姿，只有轮廓 + 一块背光面。底边对齐 y = h。</summary>
+    /// <summary>老吴背影：蹲姿，只有轮廓 + 一块背光面。底边对齐 y = h。</summary>
     public static Image CharLuYunBack(int w, int h)
     {
         var img = ProcGen.NewTransparent(w, h);
