@@ -66,18 +66,18 @@ public static class Art
                 int cellX = x / 40;
                 bool inCell = ((y - shelfTop) % 24) is > 2 and < 22 && (x % 40) is > 1 and < 38;
 
+                // 对比全部压进 0.24~0.48——原来 0.55/0.10 的满摆幅在 640×360
+                // 下就是一张黑白棋盘（真人截图为证）。档案架要"密"不要"跳"。
                 if (!inCell)
                 {
-                    // 隔板：上沿亮、下沿暗
                     bool lit = ((y - shelfTop) % 24) <= 3;
-                    v = lit ? 0.42f : 0.16f;
+                    v = lit ? 0.38f : 0.20f;
                 }
                 else
                 {
-                    // 牛皮纸袋
                     float n = ProcGen.FractalAccessor(cellX * 40, cellY * 24, 32, 29, 2);
-                    bool bag = ((x % 40) - 3) / 32f > n * 0.5f;
-                    v = bag ? 0.55f : 0.10f;
+                    bool bag = ((x % 40) - 3) / 32f > n * 0.55f + 0.18f;
+                    v = bag ? 0.48f : 0.26f;
                 }
             }
             else
@@ -85,6 +85,9 @@ public static class Art
                 // 阅览台：木纹
                 v = 0.30f + ProcGen.FractalAccessor(x, y, 48, 31, 2) * 0.28f;
             }
+            uint gr = (uint)(x * 73856093 ^ y * 19349663);
+            gr ^= gr >> 13; gr *= 0x5bd1e995u;
+            v += ((gr & 0xFF) / 255f - 0.5f) * 0.045f;   // 逐像素砂感：杀块状棋盘感
             img.SetPixel(x, y, new Color(v, v * 0.98f, v * 0.94f, 1));
         }
         return img;

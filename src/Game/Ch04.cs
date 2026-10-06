@@ -10,7 +10,7 @@ public partial class Ch04 : StorySceneBase
     protected override void SceneReady()
     {
         Plate("bg_archive_room");
-        Raw("res://assets/textures/char_suteacher_portrait.png", new Vector2(120, 150));  // 已改作韩梅档案照
+        Raw("res://assets/textures/char_suteacher_portrait.png", new Vector2(96, 148), 208);  // 韩梅档案照：208px 高的一寸档照，立在卷宗上
         Subs(() => Subs(Gate,
             "2006 年 5 月，公司会计韩梅在账目里发现一笔奇怪的支出。和苏兰的保险有关。",
             "她继续往下查：保险、墓位、墓碑、资金流向——都发生在苏兰死之前。",

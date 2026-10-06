@@ -56,7 +56,11 @@ public partial class RPGExplo : Node2D
         var args = OS.GetCmdlineUserArgs();
         _qingming = System.Array.IndexOf(args, "qingming") >= 0;
         // -- free：自由走（不带自动寻路、不截图、不退出）——给人试玩用的模式
-        _free = System.Array.IndexOf(args, "free") >= 0;
+        // 2026-10-06 真人反馈"进墓园人物自己狂奔然后闪退"：自动寻路+到点 Quit
+        // 是回归测试台的行为，不该是默认。现在——默认就是自由走，
+        // 要跑回归显式 -- auto（自动路径+截图+到点退出，原测试链不变）。
+        bool autoDemo = System.Array.IndexOf(args, "auto") >= 0;
+        _free = !autoDemo;
         if (_free) _manual = true;
         var bg = new Sprite2D
         {
