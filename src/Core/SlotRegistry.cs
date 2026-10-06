@@ -128,7 +128,7 @@ public static class SlotRegistry
             () => Art.BgGraveyard(640, 360), true,
             "远景=地图/墓地.png 顶部横带重处理，中景=抠出的真碑；石头质感仍要人/SD");
         Add("bg_cemetery_qingming", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgGraveyard(640, 360), true, "★ 同上，且要和 C1 是同一个地方");
+            () => Art.BgGraveyard(640, 360), true, "★ 同上；俯视整图 map_graveyard_qingming 已入库在用（RPG 层）");
 
         // ── 从 地图/墓地.png 复用出来的素材。都是已抠好的可用资源 ──
         Add("bg_graveyard_far", 640, 224, AssetIntake.Kind.Pixel, 12, true,
@@ -189,9 +189,9 @@ public static class SlotRegistry
         Add("map_archive", 960, 720, AssetIntake.Kind.Background, 40, false,
             () => null!, false, "★ 档案室俯视整图（含架格）。P8 可替换 bg_archive_room 程序版");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光，程序版太糙");
+            () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光；俯视整图 map_office 已入库");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgArchive(640, 360), true, "★ 几百个格架，程序版只是示意");
+            () => Art.BgArchive(640, 360), true, "★ 几百个格架；俯视整图 map_archive 已入库");
         Add("bg_shop_front", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgShop(640, 360), false, "程序生成：卷帘门条纹 + 地上石粉");
         // ★ 新增：P1 铺子内景。S1/S14/S15/S16/S20 五场共用，是复用面最大的一张
