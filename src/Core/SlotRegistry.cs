@@ -188,6 +188,9 @@ public static class SlotRegistry
             () => null!, false, "★ 墓园办公室俯视整图。P5/P6 内景从此有真背景，可替换 bg_office_desk 程序版");
         Add("map_archive", 960, 720, AssetIntake.Kind.Background, 40, false,
             () => null!, false, "★ 档案室俯视整图（含架格）。P8 可替换 bg_archive_room 程序版");
+        Add("map_shop", 1152, 960, AssetIntake.Kind.Background, 96, false,
+            () => null!, false, "铺子俯视整图（P1 五场共用）。左侧/底部紫底区是碑样品陈列，接入前裁掉；"
+            + "暖棕地板可走、石堆/家具为障碍（分类采样已过，与办公室排同款碰撞层接入）");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光；俯视整图 map_office 已入库");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
@@ -196,8 +199,8 @@ public static class SlotRegistry
             () => Art.BgShop(640, 360), false, "程序生成：卷帘门条纹 + 地上石粉");
         // ★ 新增：P1 铺子内景。S1/S14/S15/S16/S20 五场共用，是复用面最大的一张
         Add("bg_shop_interior", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgShopInterior(640, 360), true,
-            "★ P1 铺子内景。五场共用，复用面最大，但程序版画不出木头和石料的质感");
+            () => Art.BgShopInterior(640, 360), false,
+            "★ P1 定景。俯视整图 map_shop 已交（三批，P1 改走 RPG）；定景版按需再出，程序版垫底");
         Add("bg_title_shopfront", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgRain(640, 360), false, "程序生成：雨夜");
 
