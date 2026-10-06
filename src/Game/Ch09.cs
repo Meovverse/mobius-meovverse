@@ -23,7 +23,18 @@ public partial class Ch09 : StorySceneBase
 
     protected override void SceneReady()
     {
-        Plate("bg_shop_front");
+        // 背景＝一堆信（美术交付）。cover 铺满：按宽对齐 640，纵向裁到 360。
+        // 深色桌面作底：信纸清理过棋盘格，现在是透明抠像，需要底衬
+        AddChild(new ColorRect { Color = new Color(0.10f, 0.09f, 0.08f), Size = new Vector2(640, 360),
+                                 MouseFilter = Control.MouseFilterEnum.Ignore });
+        var pileTex = ResourceLoader.Load<Texture2D>("res://assets/textures/letters_pile.png");
+        if (pileTex != null)
+        {
+            float k = 640f / pileTex.GetWidth();
+            AddChild(new Sprite2D { Texture = pileTex, Centered = true,
+                Position = new Vector2(320, 180), Scale = new Vector2(k, k) });
+        }
+        else Plate("bg_shop_front");
         var scatter = new Rect2[]
         {
             new(380, 200, 150, 34), new(90, 90, 150, 34), new(300, 60, 170, 34),
@@ -37,14 +48,19 @@ public partial class Ch09 : StorySceneBase
             var lb = new Label { Text = Items[i].what, Position = new Vector2(scatter[i].Position.X, scatter[i].Position.Y),
                                  Size = new Vector2(scatter[i].Size.X, 30), MouseFilter = Control.MouseFilterEnum.Stop,
                                  AutowrapMode = TextServer.AutowrapMode.WordSmart };
-            lb.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+            // 与素材同调：墨棕色写在信纸上（原来白字压深影，和浅色纸面相冲）
+            lb.AddThemeColorOverride("font_color", new Color(0.40f, 0.31f, 0.18f));
+            lb.AddThemeColorOverride("font_shadow_color", new Color(0.98f, 0.96f, 0.88f, 0.55f));
+            lb.AddThemeConstantOverride("shadow_offset_x", 1);
+            lb.AddThemeConstantOverride("shadow_offset_y", 1);
             Ui.AddChild(lb);
             lb.GuiInput += e => { if (e is InputEventMouseButton mb && mb.Pressed) Try(idx, lb); };
             _order.Add((lb, Items[idx].when));
         }
         _hint2 = new Label { Position = new Vector2(16, 30), Size = new Vector2(608, 18),
-                             Modulate = new Color(1, 1, 0.9f, 0.85f) };
-        _hint2.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+                             Modulate = new Color(1, 1, 1, 0.95f) };
+        _hint2.AddThemeColorOverride("font_color", new Color(0.42f, 0.33f, 0.20f));
+        _hint2.AddThemeColorOverride("font_shadow_color", new Color(0.98f, 0.96f, 0.88f, 0.5f));
         Ui.AddChild(_hint2);
         Subs(null,
             "九样东西摊在桌上。把它们按**事情发生的先后**，依次点出来。",
@@ -61,7 +77,7 @@ public partial class Ch09 : StorySceneBase
         }
         _hint2.Text = "";
         lb.Text = _next + 1 + ". " + Items[idx].when + " · " + Items[idx].what;
-        lb.Modulate = new Color(1f, 0.98f, 0.9f);
+        lb.Modulate = new Color(0.72f, 0.6f, 0.4f);   // 排好后压成更深的墨
         Sfx("sfx_paper_place");
         _next++;
         if (_next == Items.Length)
