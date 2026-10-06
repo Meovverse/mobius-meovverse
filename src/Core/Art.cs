@@ -173,6 +173,29 @@ public static class Art
             }
         }
 
+        // ★ 卷帘门与门前地面：BgShop 的底是墓园（草地斑驳会渗进来——
+        //   "画面杂乱"的第二病根：内景只画了上 4/5，下 1/5 一直是外面的草地）。
+        //   整个画布必须都是室内。
+        int shutterTop = h / 6, shutterBot = h * 4 / 5;
+        for (int y = shutterTop; y < shutterBot; y++)
+        for (int x = w / 6; x < w * 5 / 6; x++)
+        {
+            bool slat = (y % 9) < 6;
+            float n = ProcGen.FractalAccessor(x, y, 48, 83, 2);
+            float v = (slat ? 0.30f : 0.20f) + n * 0.06f;
+            img.SetPixel(x, y, new Color(v, v * 0.99f, v * 0.97f, 1));
+        }
+        for (int y = shutterBot; y < h; y++)
+        {
+            float t = (y - shutterBot) / (float)(h - shutterBot);
+            for (int x = 0; x < w; x++)
+            {
+                float n = ProcGen.FractalAccessor(x, y, 40, 89, 2);
+                float v = 0.24f + n * 0.16f + t * 0.06f;
+                img.SetPixel(x, y, new Color(v, v, v * 0.98f, 1));
+            }
+        }
+
         // 堆着的石料：几块深色长方体（轮廓清楚，不画纹理）
         var rng = new System.Random(20060517);
         for (int i = 0; i < 7; i++)

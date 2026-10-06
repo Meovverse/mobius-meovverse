@@ -6,11 +6,14 @@ namespace MoShi.Game;
 /// <summary>S1 · 序章（约 60 秒）：2006 定景 + 对话 + 登记本。无分支。</summary>
 public partial class ChPrologue : StorySceneBase
 {
+    public bool TestReady2 => true;
     protected override void SceneReady()
     {
-        // 2006：铺子内景（程序版暖一档的垫子，美术 A0 交付前用它）
-        Plate("bg_title_shopfront");
-        Raw("res://assets/textures/stele_A7_full.png", new Vector2(470, 210));   // 蒙布前那块碑的位置感
+        // 2006 铺子内景（程序版垫场，美术 A0 交付后 AssetIntake 自动顶掉）。
+        // 分镜 S1 其实是"黑场里只亮一张登记卡"：内景压到近黑当底衬，
+        // 亮部只留登记卡与字幕——上一版满屏木板纹才是"杂乱"的来源。
+        Plate("bg_shop_interior");
+        Black(0.88f);
 
         Subs(() => Dialogue(new[]
         {
@@ -24,7 +27,7 @@ public partial class ChPrologue : StorySceneBase
 
     private void ShowLedger()
     {
-        var card = new Panel { Position = new Vector2(150, 40), Size = new Vector2(340, 240), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var card = new Panel { Position = new Vector2(170, 60), Size = new Vector2(300, 210), MouseFilter = Control.MouseFilterEnum.Ignore, ZIndex = 5 };
         card.AddChild(new Label
         {
             Position = new Vector2(28, 26),

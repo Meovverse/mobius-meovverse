@@ -45,7 +45,10 @@ public static class ProcGen
     {
         int p = Math.Max(1, period);
         int x0 = FloorDiv(x, p), y0 = FloorDiv(y, p);
-        float fx = Smooth(x - x0 * p), fy = Smooth(y - y0 * p);
+        // ★ 陈年潜伏 bug（M0 就在）：局部坐标没除以 period——Smooth 收到
+        //   [0,48) 的格内坐标，t²(3−2t) 直接爆到千万级，双线性 lerp 把值甩出
+        //   色域 → SetPixel 钳位成纯黑/纯白棋盘。铺子内景杂乱的病根。
+        float fx = Smooth((x - x0 * p) / (float)p), fy = Smooth((y - y0 * p) / (float)p);
         float a = TileValue(x0, y0, p, seed);
         float b = TileValue(x0 + 1, y0, p, seed);
         float c = TileValue(x0, y0 + 1, p, seed);

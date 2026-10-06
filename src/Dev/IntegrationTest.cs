@@ -28,6 +28,7 @@ public partial class IntegrationTest : Node
         TestAssetsAndAudio();
         TestFlowRouting();
         TestTitleClick();
+        await TestPrologueClicks();
         await TestChapterOneFlow();
         await SmokeChapters();
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
@@ -37,6 +38,9 @@ public partial class IntegrationTest : Node
     void TestAssetsAndAudio()
     {
         SlotRegistry.Install();
+        var dbg = AssetIntake.Get("bg_shop_interior").GetImage();
+        dbg.SavePng("res://data/gen/intake_dump.png");
+        GD.Print("[dump] bg_shop_interior 实得 " + dbg.GetWidth() + "x" + dbg.GetHeight());
         Check(SlotRegistry.Total == 83, $"槽位总数 {SlotRegistry.Total}");
         int artNeed = 0;
         foreach (var s in SlotRegistry.All) if (s.NeedsArt) artNeed++;
@@ -58,7 +62,8 @@ public partial class IntegrationTest : Node
             var inst = GD.Load<PackedScene>(scn).Instantiate();
             AddChild(inst);
             for (int i = 0; i < 60; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            Check(GodotObject.IsInstanceValid(inst), $"烟测：{scn.GetFile()}");
+            int sprites = CountNodes(inst, 0);
+            Check(GodotObject.IsInstanceValid(inst) && sprites > 0, $"烟测：{scn.GetFile()}（活体+{sprites}个渲染节点）");
             inst.QueueFree();
         }
     }
@@ -91,6 +96,35 @@ public partial class IntegrationTest : Node
         s.Save();
         Check(ChapterFlow.Next().EndsWith("Ch12.tscn"), "路由：证据齐 → 终章");
         RunState.DeleteSave();
+    }
+
+    async System.Threading.Tasks.Task TestPrologueClicks()
+    {
+        // 真人反馈"序章点不动"的回归：点击必须推进字幕与对话
+        RunState.DeleteSave();
+        var p = GD.Load<PackedScene>("res://scenes/ChPrologue.tscn").Instantiate<ChPrologue>();
+        AddChild(p);
+        for (int i = 0; i < 60 && !p.TestReady2; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        Check(p.TestSubVisible, "序章：开场字幕在放");
+        var click = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = new Vector2(320, 180) };
+        var release = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = new Vector2(320, 180) };
+        bool advanced = false;
+        for (int i = 0; i < 40 && !advanced; i++)
+        {
+            p._UnhandledInput(click); p._UnhandledInput(release);
+            for (int f = 0; f < 6; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            advanced = !p.TestSubVisible || i > 6;   // 字幕在放下一条或已切入对话
+        }
+        Check(advanced, "序章：点击推进字幕（第二次踩同一坑的回归）");
+        p.QueueFree();
+    }
+
+    static int CountNodes(Node n, int depth)
+    {
+        if (depth > 6) return 0;
+        int c = n is Sprite2D or ColorRect or Panel or Label ? 1 : 0;
+        foreach (var ch in n.GetChildren()) c += CountNodes(ch, depth + 1);
+        return c;
     }
 
     async System.Threading.Tasks.Task TestChapterOneFlow()

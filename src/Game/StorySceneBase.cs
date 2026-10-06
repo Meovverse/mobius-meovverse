@@ -25,8 +25,13 @@ public partial class StorySceneBase : Node2D
 
     public override void _Ready()
     {
+        // Install 幂等（RegisterAll 有守卫）：章节场景可能不经 Boot 直达
+        // （编辑器里 F6 跑当前场景 / 集成测试 / 未来热跳章）——不装规则表
+        // 则 AssetIntake.Get 抛"没登记的槽位"，_Ready 中断=黑屏半初始化。
+        SlotRegistry.Install();
+
         Save = RunState.Load();
-        Ui = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+        Ui = new Control { MouseFilter = Control.MouseFilterEnum.Ignore, ZIndex = 10 };
         Ui.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(Ui);
         _subBg = new ColorRect { Color = new Color(0, 0, 0, 0.65f), Visible = false,
@@ -36,6 +41,7 @@ public partial class StorySceneBase : Node2D
                            HorizontalAlignment = HorizontalAlignment.Center };
         _subBg.AddChild(_sub);
         Ui.AddChild(_subBg);
+        ArmShot();
         SceneReady();
     }
 
@@ -70,7 +76,8 @@ public partial class StorySceneBase : Node2D
     /// <summary>纯色遮幅/黑场。</summary>
     protected ColorRect Black(float alpha = 1f)
     {
-        var c = new ColorRect { Color = new Color(0, 0, 0, alpha), Size = new Vector2(VW, VH) };
+        // 1：盖住所有图版（z=0），Ui 在 z=10 不受影响
+        var c = new ColorRect { Color = new Color(0, 0, 0, alpha), Size = new Vector2(VW, VH), ZIndex = 1 };
         AddChild(c);
         return c;
     }
@@ -96,6 +103,17 @@ public partial class StorySceneBase : Node2D
     /// <summary>系统静默：字幕只在停留够久或点击后推进，绝不自动跳红字。</summary>
     public override void _Process(double dt)
     {
+        if (_shotF >= 0)
+        {
+            _shotF++;
+            if (_shotF == 100)
+            {
+                GetViewport().GetTexture().GetImage().SavePng("res://data/gen/scene_shot.png");
+                GD.Print("[shot] scene_shot 已存");
+                GetTree().Quit();
+                return;
+            }
+        }
         if (!_subBg.Visible) return;
         _subTimer += (float)dt;
         bool skip = _subTimer > SubHold ||
@@ -151,7 +169,28 @@ public partial class StorySceneBase : Node2D
     }
 
     private Action<InputEvent> _inputHandler;
-    public override void _UnhandledInput(InputEvent e) => _inputHandler?.Invoke(e);
+
+    // 真人反馈第二次踩同一坑：字幕只认键盘。点击必须同样能推进——
+    // 字幕停留 >0.4s 后的点击先给字幕，不吃进选择热区。
+    public override void _UnhandledInput(InputEvent e)
+    {
+        if (_subBg.Visible && e is InputEventMouseButton { Pressed: true } && _subTimer > 0.4f)
+        {
+            NextSub();
+            return;
+        }
+        _inputHandler?.Invoke(e);
+    }
+
+    /// <summary>烟测/节奏调试用：-- shot 在第 100 帧存视口后退出。</summary>
+    private int _shotF = -1;
+    public bool TestSubVisible => _subBg.Visible;
+
+    private void ArmShot()
+    {
+        if (Godot.OS.GetCmdlineUserArgs().Length > 0 &&
+            System.Array.IndexOf(Godot.OS.GetCmdlineUserArgs(), "shot") >= 0) _shotF = 0;
+    }
 
     // ── 调查选择（§5.2：光标放到东西上，不弹按钮）──────────────────────
 
