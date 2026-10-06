@@ -44,6 +44,7 @@ public partial class ChapterOne : Node2D
 
     public override async void _Ready()
     {
+        MenuHud.Ensure(GetTree(), "第一章 · 碑上的名字", true);
         _save = RunState.Load();
 
         var fontPath = ProjectSettings.GetSetting("gui/theme/custom_font").AsString();
@@ -81,7 +82,7 @@ public partial class ChapterOne : Node2D
         _stone.Texture = _tex;
 
         _ready = true;
-        _hint.Text = "碑蒙着这些年的灰。按住**鼠标右键**，在它上面慢慢画圈。";
+        _hint.Text = "碑蒙着这些年的灰。按住鼠标右键，在它上面慢慢画圈。";
         Rebuild();
         _shot = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0;
     }
@@ -190,7 +191,7 @@ public partial class ChapterOne : Node2D
                 {
                     _phase = Phase.Choice; _hint.Text = "";
                     ShowGlow(true);
-                    _tip.Text = "「16」这一格的石头比周围浅——那是被磨掉重刻过的地方。\n按住**鼠标左键**，在那块浅斑里慢慢描过去。";
+                    _tip.Text = "「16」这一格的石头比周围浅——那是被磨掉重刻过的地方。\n按住鼠标左键，在那块浅斑里慢慢描过去。";
                 }
             }
         }

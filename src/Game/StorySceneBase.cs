@@ -42,6 +42,10 @@ public partial class StorySceneBase : Node2D
         _subBg.AddChild(_sub);
         Ui.AddChild(_subBg);
         ArmShot();
+        // 取自己的场景路径（代码实例化时为空 → 用类名兜底，测试里也能断言到章名）
+        var sf = SceneFilePath;
+        MenuHud.Ensure(GetTree(),
+            MenuHud.LabelFor(string.IsNullOrEmpty(sf) ? GetType().Name + ".tscn" : sf), true);
         SceneReady();
     }
 

@@ -40,6 +40,7 @@ public partial class ResumePoint : Node2D
                                  MouseFilter = Control.MouseFilterEnum.Ignore };
         AddChild(_white);
         MoShi.Core.AudioIndex.StopTitle(1.0f);   // 保险：标题曲止于封面
+        MoShi.Game.MenuHud.Ensure(GetTree(), null, false);
 
         _narr = Row(64, "桌上是那本旧账。写过的都还在。", 0.55f);
         if (_hasSave)

@@ -44,6 +44,7 @@ public partial class RPGExplo : Node2D
 
     public override void _Ready()
     {
+        MoShi.Game.MenuHud.Ensure(GetTree(), "墓园 · 走访途中", true);
         // 第二批美术交付了清明落成版（终章 P10）：和平时版只差 5.2% 像素。
         // ★ 但"加灰蓝雾"会让路色漂移，按颜色分路面直接失灵（实测路网少 18k px、
         //   寻路失败）。所以：**可走面永远从剥离过的平时版算，清明版只换显示层**。
