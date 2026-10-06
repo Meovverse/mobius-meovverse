@@ -26,6 +26,7 @@ public partial class IntegrationTest : Node
     {
         GD.Print("════════ 集成测试 ════════");
         TestAssetsAndAudio();
+        TestFlowRouting();
         await TestChapterOneFlow();
         await SmokeChapters();
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
@@ -50,7 +51,7 @@ public partial class IntegrationTest : Node
     {
         // 章节场景烟测：加载 + 跑 60 帧不出脚本错误即过（错误由 Godot 打 ERROR 行，
         // 这里只保证不崩；崩溃级会直接抛出）。
-        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn" })
+        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn", "res://scenes/Ch03.tscn", "res://scenes/Ch04.tscn", "res://scenes/Ch05.tscn", "res://scenes/Ch06.tscn", "res://scenes/Ch07.tscn", "res://scenes/Ch08.tscn", "res://scenes/Ch09.tscn", "res://scenes/Ch10.tscn", "res://scenes/Ch11.tscn" })
         {
             // 直接实例化场景根（.tscn 的脚本在 StorySceneBase 下）
             var inst = GD.Load<PackedScene>(scn).Instantiate();
@@ -59,6 +60,25 @@ public partial class IntegrationTest : Node
             Check(GodotObject.IsInstanceValid(inst), $"烟测：{scn.GetFile()}");
             inst.QueueFree();
         }
+    }
+
+    void TestFlowRouting()
+    {
+        RunState.DeleteSave();
+        Check(ChapterFlow.Next().EndsWith("ChPrologue.tscn"), "路由：新档 → 序章");
+        var s = new RunState(); s.Set(RunState.Flag.Clue16); s.Save();
+        Check(ChapterFlow.Next().EndsWith("ChapterOne.tscn"), "路由：有序章 → 一章");
+        s = RunState.Load(); s.Set(RunState.Flag.Clue01); s.Set(RunState.Flag.StoneAltered); s.Save();
+        Check(ChapterFlow.Next().EndsWith("Ch02.tscn"), "路由：有一章 → 二章");
+        // 直接推到终章
+        s = new RunState();
+        s.Set(RunState.Flag.Clue16); s.Set(RunState.Flag.Clue01); s.Set(RunState.Flag.StoneAltered);
+        s.Set(RunState.Flag.Clue05); s.Set(RunState.Flag.Clue06); s.Set(RunState.Flag.Clue10);
+        s.Set(RunState.Flag.Clue13); s.Set(RunState.Flag.Clue15); s.Set("ch7_done"); s.Set("ch8_done");
+        s.Set(RunState.Flag.TimelineBuilt); s.Set("ch10_done"); s.Set(RunState.Flag.EvidenceFixed);
+        s.Save();
+        Check(ChapterFlow.Next().EndsWith("Ch12.tscn"), "路由：证据齐 → 终章");
+        RunState.DeleteSave();
     }
 
     async System.Threading.Tasks.Task TestChapterOneFlow()

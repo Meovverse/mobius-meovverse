@@ -29,6 +29,7 @@ public static class ChapterFlow
         if (!s.Has(RunState.Flag.EvidenceFixed)) return "res://scenes/Ch11.tscn";
         if (!s.Has(RunState.Flag.BaseExposed)) return "res://scenes/Ch12.tscn";
         if (!s.Has("ch13_done")) return "res://scenes/Ch13.tscn";
-        return "res://scenes/Epilogue.tscn";
+        if (!s.Has("epilogue_done")) return "res://scenes/Epilogue.tscn";
+        return "res://scenes/Boot.tscn";   // 全通：回标题
     }
 }
