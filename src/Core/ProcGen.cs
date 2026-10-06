@@ -361,6 +361,36 @@ public static class ProcGen
     // ── 纸 ──────────────────────────────────────────────────────────────
 
     /// <summary>纸页底（带 alpha 的竖版纸）。程序版：边缘微不规则 + 1px 暗边。</summary>
+    /// <summary>
+    /// P3 登记本 · 双页：左页 2006（两行）／右页 2026（18 行线索），中间一道装订缝。
+    /// 新剧本（墓时）把线索表画在这本子上，所以它不再是单页纸。
+    /// </summary>
+    public static Image PaperSpread(int pageW, int h)
+    {
+        int gap = 8;
+        var img = Image.CreateEmpty(pageW * 2 + gap, h, false, Image.Format.Rgba8);
+        img.Fill(Rgb(96, 84, 68));                       // 书脊：露出的封面布纹
+        var l = PaperSheet(pageW, h);
+        var r = PaperSheet(pageW, h);
+        img.BlitRect(l, new Rect2I(0, 0, pageW, h), new Vector2I(0, 0));
+        img.BlitRect(r, new Rect2I(0, 0, pageW, h), new Vector2I(pageW + gap, 0));
+        // 装订缝两侧压一点影，双页才有"摊开"的体积
+        for (int y = 0; y < h; y++)
+        {
+            for (int k = 0; k < gap; k++)
+            {
+                float sh = k < gap / 2 ? 0.72f + 0.28f * (k / (float)(gap / 2))
+                                       : 0.72f + 0.28f * ((gap - 1 - k) / (float)(gap / 2));
+                img.SetPixel(pageW + k, y, new Color(96 * sh / 255f, 84 * sh / 255f, 68 * sh / 255f, 1f));
+            }
+            var le = img.GetPixel(pageW - 1, y);
+            var re = img.GetPixel(pageW + gap, y);
+            img.SetPixel(pageW - 1, y, new Color(le.R * 0.9f, le.G * 0.9f, le.B * 0.9f, 1f));
+            img.SetPixel(pageW + gap, y, new Color(re.R * 0.9f, re.G * 0.9f, re.B * 0.9f, 1f));
+        }
+        return img;
+    }
+
     public static Image PaperSheet(int w, int h)
     {
         var img = NewImage(w, h);

@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="墓石"
+config/name="墓时"
 config/description="2D 像素 · 手感推理 · 黑色喜剧"
 run/main_scene="res://scenes/Boot.tscn"
 config/features=PackedStringArray("4.7", "C#", "Mobile")

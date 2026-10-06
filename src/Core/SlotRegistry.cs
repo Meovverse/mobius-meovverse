@@ -53,7 +53,7 @@ public static class SlotRegistry
     {
         [Plate.P1] = "bg_shop_interior",
         [Plate.P2] = "stele_A7_face_base",
-        [Plate.P3] = "prop_ledger_page",
+        [Plate.P3] = "prop_ledger_spread",
         [Plate.P4] = "prop_paper_sheet",
         [Plate.P5] = "bg_office_desk",
         [Plate.P6] = "ui_system_screen",
@@ -131,14 +131,30 @@ public static class SlotRegistry
             () => Art.BgGraveyard(640, 360), true, "★ 同上，且要和 C1 是同一个地方");
 
         // ── 从 地图/墓地.png 复用出来的素材。都是已抠好的可用资源 ──
-        Add("plate_bg_graveyard_far", 640, 224, AssetIntake.Kind.Pixel, 12, true,
+        Add("bg_graveyard_far", 640, 224, AssetIntake.Kind.Pixel, 12, true,
             () => null!, false,
             "墓地远景层：顶部横带去色+压对比+模糊。俯视原图不能直接当背景，"
             + "这么处理后不再读作俯视，所以能留");
-        Add("plate_stele_bg_01", 28, 52, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 A");
-        Add("plate_stele_bg_02", 28, 33, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 B");
-        Add("plate_stele_bg_03", 24, 34, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 C");
-        Add("plate_stele_bg_04", 52, 35, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的宽碑 D");
+        Add("stele_bg_01", 28, 52, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 A");
+        Add("stele_bg_02", 28, 33, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 B");
+        Add("stele_bg_03", 24, 34, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 C");
+        Add("stele_bg_04", 52, 35, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的宽碑 D");
+
+        // ── 墓地.png 里抠出的其余道具。都是彩色原像素，未去色，供任意场景复用 ──
+        Add("prop_chapel", 195, 195, AssetIntake.Kind.Pixel, 32, true, () => null!, false,
+            "红瓦砖教堂（守墓人小屋的现成底子），带窗和门口绿植");
+        Add("prop_well", 82, 62, AssetIntake.Kind.Pixel, 24, true, () => null!, false, "石砌水井");
+        Add("prop_bench", 62, 50, AssetIntake.Kind.Pixel, 20, true, () => null!, false,
+            "木指路牌（键名沿用旧称，图是双横板路牌）");
+        // ★ 键名必须等于文件名：对账按 key.png 找。别加 plate_ 前缀，
+        //   上次这么命名结果"已交付"被报成"无贴图"。
+        Add("prop_mailbox_map", 42, 54, AssetIntake.Kind.Pixel, 24, true, () => null!, false,
+            "地图抠出的红邮筒（美术包的 prop_mailbox 是商店场景 64×80 那张，别混）。"
+            + "★ 新剧本里它是'这里一直有人来'的反证，用之前想清楚");
+        Add("prop_bush", 44, 42, AssetIntake.Kind.Pixel, 20, true, () => null!, false, "白花灌木");
+        Add("prop_fence", 58, 42, AssetIntake.Kind.Pixel, 16, true, () => null!, false, "木栅栏一段，可平铺");
+        Add("prop_pine", 62, 101, AssetIntake.Kind.Pixel, 20, true, () => null!, false, "松树");
+        Add("prop_rock", 43, 43, AssetIntake.Kind.Pixel, 16, true, () => null!, false, "紫灰圆石（带底座）");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光，程序版太糙");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
@@ -164,8 +180,9 @@ public static class SlotRegistry
             () => Art.CharPhotographer(120, 200), false, "程序生成剪影（1 阶色）");
 
         // ── E 道具 ──
-        Add("prop_ledger_page", 280, 360, AssetIntake.Kind.Pixel, 10, false,
-            () => ProcGen.PaperSheet(280, 360), false, "程序生成纸页（边缘抖动 + 1px 暗边）");
+        Add("prop_ledger_spread", 560, 320, AssetIntake.Kind.Pixel, 12, false,
+            () => ProcGen.PaperSpread(276, 320), false,
+            "P3 双页：左页 2006 两行／右页 2026 十八行线索。★ 本子上的字全是程序叠的");
         Add("prop_ledger_cover", 300, 380, AssetIntake.Kind.Pixel, 10, false,
             null, false, "[code] 程序生成封面 + 内衬衬纸；★ 里面那行字程序叠");
         Add("prop_scrap_stone", 96, 96, AssetIntake.Kind.Pixel, 10, false,
