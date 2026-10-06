@@ -123,6 +123,7 @@ public partial class StorySceneBase : Node2D
     public override void _Process(double dt)
     {
         DocHover();
+        DocKeys();
         if (_shotF >= 0)
         {
             _shotF++;
@@ -193,6 +194,10 @@ public partial class StorySceneBase : Node2D
             face.Visible = face.Texture != null;
             txt.Position = new Vector2(face.Visible ? 150 : 24, 12);
             txt.Size = new Vector2(VW - (face.Visible ? 168 : 48), 92);
+            // #15：人物对话框是浅底（黄/白），文字必须用墨色；旁白是灰底用亮字。
+            bool lightBox = who != "";
+            txt.AddThemeColorOverride("default_color",
+                lightBox ? new Color(0.11f, 0.10f, 0.09f) : new Color(0.92f, 0.92f, 0.90f));
             txt.Text = "[b]" + (who == "wu" ? "老吴" : who == "su" ? "苏航" : "") + "[/b]  " + text;
         }
         void Advance() { i++; Show(); }
@@ -281,7 +286,9 @@ public partial class StorySceneBase : Node2D
         _choiceHint.Text = hint;
 
         int n = docs.Length; float gap = 12f, w = 640f - 48 - gap * (n - 1);
-        float cw = w / n, y = 210, ch = 130;
+        // 上移到 166..290：不压底部字幕条（306 起），也不挡中景
+        float cw = w / n, y = 166, ch = 124;
+        _docSel = 0;
         for (int i = 0; i < n; i++)
         {
             var sb = new StyleBoxFlat { BgColor = new Color(0.145f, 0.14f, 0.135f, 0.97f),
@@ -290,9 +297,12 @@ public partial class StorySceneBase : Node2D
             var card = new Panel { Position = new Vector2(24 + i * (cw + gap), y), Size = new Vector2(cw, ch),
                 MouseFilter = Control.MouseFilterEnum.Ignore };
             card.AddThemeStyleboxOverride("panel", sb);
-            card.AddChild(new Label { Position = new Vector2(10, 10), Size = new Vector2(cw - 20, 20),
-                Text = docs[i].title });
-            card.AddChild(new Label { Position = new Vector2(10, 36), Size = new Vector2(cw - 20, ch - 46),
+            // #14：标题长于卡宽会溢出——自动换行 + 裁切兜底
+            var tl = new Label { Position = new Vector2(10, 8), Size = new Vector2(cw - 20, 34),
+                Text = docs[i].title, AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                ClipText = true };
+            card.AddChild(tl);
+            card.AddChild(new Label { Position = new Vector2(10, 44), Size = new Vector2(cw - 20, ch - 54),
                 Text = docs[i].sub, AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Modulate = new Color(1, 1, 1, 0.55f) });
             // 纸屑感：左上角一道浅色"纸边"
@@ -302,18 +312,28 @@ public partial class StorySceneBase : Node2D
             _docs.Add(new Doc { Root = card, Sb = sb, Box = new Rect2(24 + i * (cw + gap), y, cw, ch), Pick = docs[i].pick });
         }
         _inputHandler = OnDocInput;
+        if (_choiceHint != null) _choiceHint.Text = hint + "　（←→ 选 · Enter 确认 · 或直接点卡片）";
+    }
+
+    private int _docSel;
+    private void PickDoc(int i)
+    {
+        if (i < 0 || i >= _docs.Count) return;
+        var act = _docs[i].Pick;
+        ClearDocs();
+        act.Invoke();
     }
 
     private void OnDocInput(InputEvent e)
     {
         if (e is not InputEventMouseButton { Pressed: true } mb) return;
-        foreach (var d in _docs)
-            if (d.Box.HasPoint(mb.Position)) { var act = d.Pick; ClearDocs(); act.Invoke(); return; }
+        for (int i = 0; i < _docs.Count; i++)
+            if (_docs[i].Box.HasPoint(mb.Position)) { PickDoc(i); return; }
     }
 
     protected void ClearDocs()
     {
-        foreach (var d in _docs) { d.Root.QueueFree(); }
+        foreach (var d in _docs) { d.Root.Visible = false; d.Root.QueueFree(); }   // #13：立刻消失，别压着字幕
         _docs.Clear();
         _inputHandler = null;
         if (_choiceHint != null) _choiceHint.Text = "";
@@ -324,10 +344,26 @@ public partial class StorySceneBase : Node2D
     {
         if (_docs.Count == 0) return;
         var m = GetGlobalMousePosition();
-        foreach (var d in _docs)
-            d.Sb.BgColor = d.Box.HasPoint(m) ? new Color(0.2f, 0.195f, 0.185f, 0.98f)
-                                             : new Color(0.145f, 0.14f, 0.135f, 0.97f);
+        for (int i = 0; i < _docs.Count; i++)
+        {
+            var d = _docs[i];
+            bool on = d.Box.HasPoint(m) || i == _docSel;
+            d.Sb.BgColor = on ? new Color(0.2f, 0.195f, 0.185f, 0.98f)
+                              : new Color(0.145f, 0.14f, 0.135f, 0.97f);
+        }
     }
+
+    /// <summary>键盘操作资料卡（#16：点击若被系统吞，←→+Enter 兜底）。</summary>
+    private void DocKeys()
+    {
+        if (_docs.Count == 0) return;
+        if (Input.IsActionJustPressed("ui_left")) { _docSel = (_docSel + _docs.Count - 1) % _docs.Count; }
+        else if (Input.IsActionJustPressed("ui_right")) { _docSel = (_docSel + 1) % _docs.Count; }
+        else if (Input.IsActionJustPressed("ui_accept")) PickDoc(_docSel);
+    }
+
+    public int TestDocCount => _docs.Count;
+    public void TestClickDoc(int i) => PickDoc(i);
 
     protected void Sfx(string id) => AudioIndex.Sfx(id);
     protected void HoldStart(string id) => AudioIndex.StartHold(id);

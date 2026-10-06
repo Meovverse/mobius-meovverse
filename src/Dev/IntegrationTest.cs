@@ -38,6 +38,7 @@ public partial class IntegrationTest : Node
         TestTitleClick();
         await TestPrologueClicks();
         await TestChapterOneFlow();
+        await TestDocChoiceFlow();
         await SmokeChapters();
         RunState.DeleteSave();   // 清的是 test 档
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
@@ -59,6 +60,29 @@ public partial class IntegrationTest : Node
             Check(ResourceLoader.Exists(c.File), $"音频在库：{c.Id}");
         Check(AudioIndex.Missing().Count == 8,
             $"缺 8 条（实 {AudioIndex.Missing().Count}）：" + string.Join(" ", AudioIndex.Missing()));
+    }
+
+    async System.Threading.Tasks.Task TestDocChoiceFlow()
+    {
+        // #16 回归：分支资料卡必须点得动（旧版是隐形热区）
+        RunState.DeleteSave();
+        var c7 = new Ch07();
+        AddChild(c7);
+        bool armed = false;
+        for (int i = 0; i < 40 && !armed; i++)
+        {
+            c7.TestAdvance();
+            for (int f = 0; f < 25; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            armed = c7.TestDocCount == 2;
+        }
+        Check(armed, "第七章：资料卡出现（2 张）");
+        if (armed)
+        {
+            c7.TestClickDoc(0);   // 开口问「韩梅呢？」
+            for (int f = 0; f < 5; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Check(RunState.Load().Has(RunState.Flag.AskedHanmei), "第七章：点卡片触发后续（asked_hanmei 落盘）");
+        }
+        c7.QueueFree();
     }
 
     async System.Threading.Tasks.Task SmokeChapters()
