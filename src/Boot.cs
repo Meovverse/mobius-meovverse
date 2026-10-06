@@ -57,7 +57,11 @@ public partial class Boot : Control
         {
             GD.Print($"[title] input start via {(click ? "click" : "key")} @ {Time.GetTicksMsec() / 1000.0:F2}s");
             Leave();
+            return;
         }
+        // 无边框窗口没有 × 可点：标题界面 Esc = 退出游戏
+        if (e.IsActionPressed("ui_cancel"))
+            GetTree().Quit();
     }
 
     /// <summary>
