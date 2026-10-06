@@ -103,7 +103,13 @@ public partial class StorySceneBase : Node2D
 
     private void NextSub()
     {
-        if (_subs.Count == 0) { _subBg.Visible = false; var d = _onSubDone; _onSubDone = null; d?.Invoke(); return; }
+        if (_subs.Count == 0)
+        {
+            _subBg.Visible = false;
+            var d = _onSubDone; _onSubDone = null;
+            d?.Invoke();
+            return;
+        }
         _sub.Text = _subs.Dequeue();
         _subBg.Visible = true;
         _subTimer = 0;
@@ -115,13 +121,11 @@ public partial class StorySceneBase : Node2D
         if (_shotF >= 0)
         {
             _shotF++;
-            if (_shotF % 14 == 0)   // 截图模式：合成点击推进（字幕与对话都吃）
-            {
-                var pd = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = new Vector2(320, 100) };
-                var pu = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = new Vector2(320, 100) };
-                Input.ParseInputEvent(pd); Input.ParseInputEvent(pu);
+            if (_shotF % 24 == 0)   // 截图模式：直接走推进函数（ParseInputEvent 在
+            {                       // _Process 里时序不可靠——真机验证过不生效）
+                if (_subBg.Visible) NextSub(); else _advanceHook?.Invoke();
             }
-            if (_shotF == 300)
+            if (_shotF == 420)
             {
                 GetViewport().GetTexture().GetImage().SavePng("res://data/gen/scene_shot.png");
                 GD.Print("[shot] scene_shot 已存");
@@ -142,8 +146,14 @@ public partial class StorySceneBase : Node2D
     {
         // 通铺三边：贴左、贴右、贴底（真人反馈：对话框要占满左侧右侧与下侧）
         var panel = new Panel { Visible = false, Position = new Vector2(0, VH - 116), Size = new Vector2(VW, 116), MouseFilter = Control.MouseFilterEnum.Ignore };
+        TestPanel = panel;
+        // ★ ExpandMode 必须 Ignore：默认 KeepSize 会让控件涨到纹理原始尺寸
+        //   （交付人像 512×768），这就是"头像大大超出界面、文字被盖没"的根因。
         var face = new TextureRect { Position = new Vector2(14, 10), Size = new Vector2(88, 96),
-                                     StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore };
+                                     ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                                     StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                                     MouseFilter = Control.MouseFilterEnum.Ignore };
+        TestFace = face;
         var txt = new RichTextLabel { Position = new Vector2(116, 12), Size = new Vector2(VW - 132, 92),
                                       BbcodeEnabled = true, Text = "", MouseFilter = Control.MouseFilterEnum.Ignore };
         panel.AddChild(face); panel.AddChild(txt);
@@ -161,7 +171,12 @@ public partial class StorySceneBase : Node2D
             StyleBox sb;
             if (who != "")
             {
-                sb = new StyleBoxTexture { Texture = who == "wu" ? texWu : texSu };
+                // Scale 拉伸：StyleBoxTexture 默认按纹理原始尺寸画（320×64 的
+                // 对话框底只占面板一小截）——真人反馈"对话框显示不全"的病根。
+                var st = new StyleBoxTexture { Texture = who == "wu" ? texWu : texSu };
+                st.AxisStretchHorizontal = StyleBoxTexture.AxisStretchMode.Stretch;
+                st.AxisStretchVertical = StyleBoxTexture.AxisStretchMode.Stretch;
+                sb = st;
                 face.Texture = who == "wu" ? faceWu : null;
                 face.Visible = face.Texture != null;
             }
@@ -173,17 +188,22 @@ public partial class StorySceneBase : Node2D
             panel.AddThemeStyleboxOverride("panel", sb);
             txt.Text = "[b]" + (who == "wu" ? "老吴" : who == "su" ? "苏航" : "") + "[/b]  " + text;
         }
+        void Advance() { i++; Show(); }
+        _advanceHook = Advance;
         Show();
         void OnInput(InputEvent e)
         {
             if (!panel.Visible) return;
             if (e.IsActionPressed("ui_accept") || (e is InputEventMouseButton mb && mb.Pressed))
-            { i++; Show(); }
+                Advance();
         }
         _inputHandler = OnInput;
     }
 
     private Action<InputEvent> _inputHandler;
+    private System.Action _advanceHook;   // Dialogue 装的"下一句"钩子，shot 模式用
+    internal Control TestPanel, TestFace; // 回归断言用（对话布局几何）
+    internal void TestAdvance() { if (_subBg.Visible && _subTimer > 0.35f) NextSub(); else _advanceHook?.Invoke(); }
 
     // 真人反馈第二次踩同一坑：字幕只认键盘。点击必须同样能推进——
     // 字幕停留 >0.4s 后的点击先给字幕，不吃进选择热区。

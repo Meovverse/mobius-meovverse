@@ -36,6 +36,7 @@ public partial class ResumePoint : Node2D
         _white = new ColorRect { Color = new Color(1, 1, 1, 0), Size = new Vector2(VW, VH),
                                  MouseFilter = Control.MouseFilterEnum.Ignore };
         AddChild(_white);
+        MoShi.Core.AudioIndex.StopTitle(1.0f);   // 保险：标题曲止于封面
 
         _narr = Row(64, "桌上是那本旧账。写过的都还在。", 0.55f);
         if (_hasSave)

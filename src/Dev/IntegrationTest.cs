@@ -124,6 +124,29 @@ public partial class IntegrationTest : Node
             advanced = !p.TestSubVisible || i > 6;   // 字幕在放下一条或已切入对话
         }
         Check(advanced, "序章：点击推进字幕（第二次踩同一坑的回归）");
+        // 步进到带头像的台词（wu 行），断言布局几何在界内——真人反馈"头像爆框"回归
+        bool faceSeen = false;
+        for (int i = 0; i < 40 && !faceSeen; i++)
+        {
+            p.TestAdvance();
+            for (int f = 0; f < 25; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            faceSeen = p.TestFace != null && p.TestFace.Visible;
+        }
+        var fp = p.TestFace;
+        if (fp != null && fp.Visible)
+        {
+            var r = fp.GetGlobalRect();
+            Check(r.Position.X >= 0 && r.End.X <= 640 && r.End.Y <= 360,
+                  $"头像在视口内 ({r.Position.X},{r.Position.Y})-({r.End.X},{r.End.Y})");
+        }
+        else Check(false, "步进 40 次仍未出现带头像的台词——断言失效");
+        var pp = p.TestPanel;
+        if (pp != null)
+        {
+            var pr = pp.GetGlobalRect();
+            Check(pr.Size.X >= 639.9f && pr.End.Y <= 360.01f && pr.Position.Y >= 200,
+                  $"对话框通铺且贴底 ({pr.Position.X},{pr.Position.Y}) {pr.Size.X}×{pr.Size.Y}");
+        }
         p.QueueFree();
     }
 
