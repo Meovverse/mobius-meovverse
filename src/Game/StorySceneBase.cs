@@ -35,8 +35,8 @@ public partial class StorySceneBase : Node2D
         Ui.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(Ui);
         _subBg = new ColorRect { Color = new Color(0, 0, 0, 0.65f), Visible = false,
-                                 Position = new Vector2(40, 296), Size = new Vector2(560, 52) };
-        _sub = new Label { Position = new Vector2(12, 8), Size = new Vector2(536, 36),
+                                 Position = new Vector2(0, VH - 54), Size = new Vector2(VW, 54) };
+        _sub = new Label { Position = new Vector2(16, 10), Size = new Vector2(VW - 32, 36),
                            AutowrapMode = TextServer.AutowrapMode.WordSmart,
                            HorizontalAlignment = HorizontalAlignment.Center };
         _subBg.AddChild(_sub);
@@ -126,10 +126,11 @@ public partial class StorySceneBase : Node2D
     /// <summary>一行一条 (谁, 话)。who: "wu"/"su"/""=旁白。</summary>
     protected void Dialogue((string who, string line)[] lines, Action done)
     {
-        var panel = new Panel { Visible = false, Position = new Vector2(24, 236), Size = new Vector2(592, 108), MouseFilter = Control.MouseFilterEnum.Ignore };
-        var face = new TextureRect { Position = new Vector2(8, 8), Size = new Vector2(84, 92),
+        // 通铺三边：贴左、贴右、贴底（真人反馈：对话框要占满左侧右侧与下侧）
+        var panel = new Panel { Visible = false, Position = new Vector2(0, VH - 116), Size = new Vector2(VW, 116), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var face = new TextureRect { Position = new Vector2(14, 10), Size = new Vector2(88, 96),
                                      StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore };
-        var txt = new RichTextLabel { Position = new Vector2(100, 10), Size = new Vector2(480, 88),
+        var txt = new RichTextLabel { Position = new Vector2(116, 12), Size = new Vector2(VW - 132, 92),
                                       BbcodeEnabled = true, Text = "", MouseFilter = Control.MouseFilterEnum.Ignore };
         panel.AddChild(face); panel.AddChild(txt);
         Ui.AddChild(panel);

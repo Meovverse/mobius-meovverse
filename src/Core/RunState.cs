@@ -149,7 +149,8 @@ public sealed class RunState
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private const string SavePath = "user://ledger_save.json";
+    /// <summary>集成测试把这里换成 test 档，绝不允许碰玩家的真实进度。</summary>
+    public static string SavePath = "user://ledger_save.json";
 
     public void Save()
     {

@@ -20,7 +20,14 @@ public partial class IntegrationTest : Node
         if (ok) _pass++; else _fail++;
     }
 
-    public override void _Ready() => Run();
+    public override void _Ready()
+    {
+        // 测试写 user://test_ledger.json——上一版测试直接写玩家存档，
+        // 真人反馈"标题进去直接跳到第五章"就是被测试污染的档。
+        RunState.SavePath = "user://test_ledger.json";
+        RunState.DeleteSave();
+        Run();
+    }
 
     async void Run()
     {
@@ -31,6 +38,7 @@ public partial class IntegrationTest : Node
         await TestPrologueClicks();
         await TestChapterOneFlow();
         await SmokeChapters();
+        RunState.DeleteSave();   // 清的是 test 档
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
         GetTree().Quit(_fail > 0 ? 1 : 0);
     }

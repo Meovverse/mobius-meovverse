@@ -51,8 +51,15 @@ public partial class Boot : Control
     public override void _Input(InputEvent e)
     {
         if (_leaving) return;
-        bool click = e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left;
+        var mb = e as InputEventMouseButton;
+        bool click = mb != null && mb.Pressed && mb.ButtonIndex == MouseButton.Left;
         bool key = e.IsActionPressed("ui_accept");
+        // Shift+点击 = 抹掉进度重新开始（ChapterFlow 会从序章走起）
+        if (click && (mb.ShiftPressed || Input.IsKeyPressed(Key.Shift)))
+        {
+            Core.RunState.DeleteSave();
+            GD.Print("[title] 存档已清空，从头开始");
+        }
         if (click || key)
         {
             GD.Print($"[title] input start via {(click ? "click" : "key")} @ {Time.GetTicksMsec() / 1000.0:F2}s");
@@ -171,6 +178,17 @@ public partial class Boot : Control
         if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "autostart") >= 0)
             _autoWait = 72;
         GD.Print(ResourceLoader.Exists(path) ? $"[boot] 字体：{path.GetFile()}" : "[boot] 字体未加载！");
-        GD.Print("[boot] 点击画面开始");
+        GD.Print("[boot] 点击画面开始（有存档=续章）；Shift+点击=清空重开");
+        if (Core.RunState.HasSave())
+        {
+            var hintNew = new Label
+            {
+                Position = new Vector2(2, 338), Size = new Vector2(636, 20),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Text = "Shift+点击 = 抹掉进度重新开始",
+                Modulate = new Color(1, 1, 1, 0.4f),
+            };
+            AddChild(hintNew);
+        }
     }
 }
