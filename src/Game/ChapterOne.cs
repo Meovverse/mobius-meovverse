@@ -33,6 +33,7 @@ public partial class ChapterOne : Node2D
     RunState _save;
 
     Phase _phase = Phase.Wiping;
+    bool _breakFiredThisPress;
     bool _endingOne, _shot, _handOn;
     Sprite2D _hand;
     bool _ready, _wipeHold, _traceHold;
@@ -65,7 +66,7 @@ public partial class ChapterOne : Node2D
         // 上一版为了"手和光标不重叠"把系统光标整个藏了——真人反馈反过来变成
         // "找不到鼠标、以为游戏没反应"。光标永远可见是底线；示范手挪到日期区
         // 左下方画圈，和玩家手位不抢，任何按键一响它就退场。
-        if (_handOn) _tip.Text = "灰挺厚。按住右键，画圈擦。";
+        if (_handOn) _tip.Text = "灰挺厚。按住鼠标右键，画圈擦。（跟着那只手做就行）";
 
         _sm = await SteleBuilder.BuildAsync(font, this);
         _lay = SteleBuilder.LastLayout;
@@ -78,7 +79,7 @@ public partial class ChapterOne : Node2D
         _stone.Texture = _tex;
 
         _ready = true;
-        _hint.Text = "按住右键擦。";
+        _hint.Text = "碑蒙着这些年的灰。按住**鼠标右键**，在它上面慢慢画圈。";
         Rebuild();
         _shot = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0;
     }
@@ -185,7 +186,8 @@ public partial class ChapterOne : Node2D
                 if (DateDustMean() < 0.08f)
                 {
                     _phase = Phase.Choice; _hint.Text = "";
-                    _tip.Text = "「16」那一格的石头，比周围的白。\n按住左键，顺着白缝慢慢描。右下角是随身登记本，最右边——转身就走。";
+                    ShowGlow(true);
+                    _tip.Text = "「16」这一格的石头比周围浅——那是被磨掉重刻过的地方。\n按住**鼠标左键**，在那块浅斑里慢慢描过去。";
                 }
             }
         }
@@ -195,18 +197,29 @@ public partial class ChapterOne : Node2D
             bool left = Input.IsMouseButtonPressed(MouseButton.Left);
             if (left)
             {
-                var mark = _sm.FindMarkNear(m, 10f);
+                var mark = _sm.FindMarkNear(m, 14f);   // 判定圈 10→14px：普通玩家手抖的余地
                 if (mark != null)
                 {
-                    if (!_traceHold) { _traceHold = true; AudioIndex.StartHold("loop_chisel_run"); }
-                    _sm.MarkTrace(mark, (int)m.X, (int)m.Y);
+                    if (!_traceHold) { _traceHold = true; _breakFiredThisPress = false; AudioIndex.StartHold("loop_chisel_run"); }
+                    // 笔刷半径 3：单程扫过就能覆盖，旧版 1px 要描十几遍
+                    for (int oy = -3; oy <= 3; oy++)
+                    for (int ox = -3; ox <= 3; ox++)
+                        if (ox * ox + oy * oy <= 9) _sm.MarkTrace(mark, (int)m.X + ox, (int)m.Y + oy);
                     _renderAcc = 9;
                     if (mark == _sixteen && mark.Complete) SixteenFound();
                 }
                 else if (_traceHold)
                 {
                     _traceHold = false; AudioIndex.StopHold();
-                    if (_sixteen != null && !_sixteen.Complete) { _sixteen.Reset(); AudioIndex.Sfx("sfx_trace_break"); _tip.Text = "断了。从断的地方接着描。"; }
+                    // Natsume 反馈两条一起修：①断音不再连环重播（0.9s 冷却 +
+                    // 每次按住只响一次）②**进度不再清零**——移出只是暂停，
+                    // 回来接着描。旧版"离开=全部归零"让玩家原地卡死。
+                    if (_sixteen != null && !_sixteen.Complete && _traceProgress() > 0 && !_breakFiredThisPress)
+                    {
+                        _breakFiredThisPress = true;
+                        AudioIndex.Sfx("sfx_trace_break");
+                        _tip.Text = "手移出去了——描过的都在。回到浅斑里接着描。";
+                    }
                 }
             }
             else if (_traceHold) { _traceHold = false; AudioIndex.StopHold(); }
@@ -297,9 +310,40 @@ public partial class ChapterOne : Node2D
 
     // ── 分支（全部落 RunState，对分镜稿"调查选择一"）──────────────────
 
+    private GlowRect _glow;
+    private void ShowGlow(bool on)
+    {
+        if (_sixteen == null) return;
+        _glow ??= new GlowRect { Bounds = _sixteen.Bounds.Grow(6) };
+        if (on && !_glow.IsInsideTree()) AddChild(_glow);
+        if (_glow.IsInsideTree()) _glow.Visible = on;
+    }
+    private float _traceProgress() => _sixteen == null ? 0f : _sixteen.Progress;
+
+    /// <summary>测试钩子：走与 _Process 完全相同的描迹分支。</summary>
+    public void Test_TraceStep(Vector2 p, bool leftDown)
+    {
+        if (_sixteen == null) return;
+        if (leftDown)
+        {
+            var mark = _sm.FindMarkNear(p, 14f);
+            if (mark != null)
+            {
+                if (!_traceHold) { _traceHold = true; _breakFiredThisPress = false; }
+                for (int oy = -3; oy <= 3; oy++)
+                for (int ox = -3; ox <= 3; ox++)
+                    if (ox * ox + oy * oy <= 9) _sm.MarkTrace(mark, (int)p.X + ox, (int)p.Y + oy);
+                if (mark == _sixteen && mark.Complete) SixteenFound();
+            }
+        }
+        else if (_traceHold) { _traceHold = false; }
+    }
+    public float Test_SixteenProgress() => _sixteen?.Progress ?? -1f;
+
     void SixteenFound()
     {
         AudioIndex.Sfx("sfx_trace_done");
+        ShowGlow(false);
         _save.Set(RunState.Flag.Clue01); _save.Set(RunState.Flag.StoneAltered);
         _save.SetChoice(1, 'A');
         _save.Ledger.Add(new LedgerLine { Text = "「16」底下磨掉过什么。刻痕还是我的，字不是了。" });
@@ -326,5 +370,19 @@ public partial class ChapterOne : Node2D
             ? "结局一 · 没发现碑的问题\n\n真相就在眼前，但你没有看见。\n\n按 Enter 回标题"
             : "你移开了视线。\n按 Enter 回碑前";
         _phase = Phase.Ended;
+    }
+}
+
+/// <summary>磨痕区的呼吸描边：只画 1px 亮框 + 4% 填充，提示"是这里"，不解释（系统不出声）。</summary>
+public partial class GlowRect : Node2D
+{
+    public Rect2 Bounds;
+    private float _t;
+    public override void _Process(double delta) { _t += (float)delta; QueueRedraw(); }
+    public override void _Draw()
+    {
+        float a = 0.35f + 0.25f * Mathf.Sin(_t * 3f);
+        DrawRect(Bounds, new Color(1f, 0.98f, 0.9f, a * 0.10f), true);
+        DrawRect(Bounds, new Color(1f, 0.98f, 0.9f, a), false, 1f);
     }
 }

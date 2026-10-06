@@ -29,10 +29,13 @@ public partial class ResumePoint : Node2D
 
         AddChild(new ColorRect { Color = new Color(0, 0, 0), Size = new Vector2(VW, VH),
                                  MouseFilter = Control.MouseFilterEnum.Ignore });
-        var art = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
+        // ★ Citrate657 #1：这一屏有 UI 文字，必须用**无字封面**（美术重制版），
+        //   带字的那张只属于标题画面本体。
+        var art = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title_notext.png");
+        if (art == null) art = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
         if (art != null)
             AddChild(new Sprite2D { Texture = art, Centered = false, Scale = new Vector2(0.5f, 0.5f),
-                                    Modulate = new Color(1, 1, 1, 0.16f) });
+                                    Modulate = new Color(1, 1, 1, 0.35f) });
         _white = new ColorRect { Color = new Color(1, 1, 1, 0), Size = new Vector2(VW, VH),
                                  MouseFilter = Control.MouseFilterEnum.Ignore };
         AddChild(_white);

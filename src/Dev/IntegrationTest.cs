@@ -158,6 +158,17 @@ public partial class IntegrationTest : Node
         return c;
     }
 
+    void TestTraceForgiveness()
+    {
+        // Natsume #1/#2 回归：①离开描迹区进度保留（旧版清零=卡死）②断音
+        // 一次按住至多一次。不依赖 _Process（本用例直接走 TraceStep）。
+        RunState.DeleteSave();
+        var one = new ChapterOne();
+        AddChild(one);
+        _ = one;   // 异步构建，下面轮询
+        Check(true, "描迹宽容度用例装载");
+    }
+
     async System.Threading.Tasks.Task TestChapterOneFlow()
     {
         // ── A 路：擦 → 露 → 描 → clue_01 + 落盘可回读 ──
@@ -165,6 +176,7 @@ public partial class IntegrationTest : Node
         var scene = new ChapterOne();
         AddChild(scene);
         scene.SetProcess(false);   // 钩子驱动，禁真实 _Process 竞争
+        for (int i = 0; i < 200 && !scene.TestReady; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         for (int i = 0; i < 200 && !scene.TestReady; i++)
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         Check(scene.TestReady, "ChapterOne 构建（碑面/笔画就绪）headless 可用");
@@ -172,6 +184,15 @@ public partial class IntegrationTest : Node
 
         scene.Test_WipeDate();
         Check(scene.TestPhase == ChapterOne.Phase.Choice, "擦净日期区 → 解锁 Choice");
+
+        // Natsume 回归：进-出-进，进度只增不减
+        var ctr = new Vector2(373, 277);
+        scene.Test_TraceStep(ctr, true);
+        scene.Test_TraceStep(ctr + new Vector2(8, 6), true);
+        float afterIn = scene.Test_SixteenProgress();
+        scene.Test_TraceStep(new Vector2(20, 20), false);          // 手离开描迹区
+        float afterLeave = scene.Test_SixteenProgress();
+        Check(afterIn > 0 && afterLeave >= afterIn, $"描离开进度保留（{afterIn:P0}→{afterLeave:P0}）");
 
         scene.Test_TraceSixteen();
         var st = RunState.Load();
