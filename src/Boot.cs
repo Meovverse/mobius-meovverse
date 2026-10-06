@@ -21,6 +21,20 @@ public partial class Boot : Control
 
     public override void _Process(double delta)
     {
+        if (_autoWait > 0 && --_autoWait == 0 && !_leaving)
+        {
+            GD.Print("[e2e] before window=" + GetWindow().Size);
+            Leave();
+            _e2eTimer = GetTree().CreateTimer(3.2);
+            GD.Print("[e2e] timer armed");
+            // ★ 回调绝不能碰 this——Boot 在换场时被释放，捕获实例=静默 ObjectDisposed
+            _e2eTimer.Timeout += () =>
+            {
+                var tree = (SceneTree)Engine.GetMainLoop();
+                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name);
+                tree.Quit();
+            };
+        }
         if (_shotWait > 0 && --_shotWait == 0)
         {
             GetViewport().GetTexture().GetImage().SavePng("res://data/gen/title_shot.png");
@@ -63,10 +77,14 @@ public partial class Boot : Control
         //   被跳过。收进同一条链尾：白场站稳 0.5s 再切。
         tw.TweenInterval(0.5);
         tw.TweenCallback(Callable.From(() =>
-            GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next())));
+        {
+            GD.Print("[e2e] flash end -> switch, window=" + GetWindow().Size);
+            GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next());
+        }));
     }
 
-    private int _shotWait;
+    private int _shotWait, _autoWait;
+    private static SceneTreeTimer _e2eTimer;   // ★ static：换场景会释放 Boot 实例，挂在实例上的定时器会被 GC——e2e 实测丢回调
 
     public override void _Ready()
     {
@@ -114,6 +132,10 @@ public partial class Boot : Control
         // 验收截图钩子：-- shot 存标题画面后退出
         if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0)
             _shotWait = 20;
+
+        // 端到端自测钩子：-- autostart 模拟 1.2 秒后点击标题
+        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "autostart") >= 0)
+            _autoWait = 72;
         GD.Print(ResourceLoader.Exists(path) ? $"[boot] 字体：{path.GetFile()}" : "[boot] 字体未加载！");
         GD.Print("[boot] 点击画面开始");
     }
