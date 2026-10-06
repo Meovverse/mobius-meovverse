@@ -121,7 +121,7 @@ public static class AssetIntake
         img ??= rule.Procedural?.Invoke();
         if (img == null)
         {
-            Report.Add($"!! {key} 既没有美术资产也没有程序实现，用纯黑顶替");
+            Report.Add($"·  {key} 无贴图（代码绘制/叠字，或占位待美术）");
             img = Image.CreateEmpty(rule.W, rule.H, false, Image.Format.Rgba8);
             img.Fill(new Color(0, 0, 0));
         }
@@ -157,7 +157,11 @@ public static class AssetIntake
         foreach (var name in rule.Candidates)
         {
             if (!Incoming.TryGetValue(name.ToLowerInvariant(), out var path))
-                continue;
+            {
+                // 槽位名没带扩展名时再试一次带 .png 的
+                if (!Incoming.TryGetValue(name.ToLowerInvariant() + ".png", out path))
+                    continue;
+            }
 
             var tex = ResourceLoader.Load<Texture2D>(path);
             if (tex == null)

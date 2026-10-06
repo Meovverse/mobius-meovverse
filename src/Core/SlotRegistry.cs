@@ -155,6 +155,28 @@ public static class SlotRegistry
         Add("sign_lu_shi", 160, 48, AssetIntake.Kind.Pixel, 8, false,
             null, false, "[code] 程序用字体渲染「陆氏石刻」，SD 画不了汉字");
 
+        // ── E2 美术已交付（来自 /Downloads/gamejam素材）─────────────────
+        //
+        // ★ 这些图不是 640×360 像素画：512×768 的肖像、12 色的队标、
+        //   带半透明的对话框。AssetIntake 会自动缩放 + 量化 + alpha 二值化。
+        //   实测：苏老师量化到 12 级灰阶、缩到 176×264 仍然清晰可读。
+        Add("logo_team", 256, 256, AssetIntake.Kind.Pixel, 4, false,
+            null, false, "美术已交付：纯黑剪影，1 色，天然契合灰度。标题画面");
+        Add("ui_dialog_frame", 320, 64, AssetIntake.Kind.Pixel, 8, false,
+            null, false, "美术已交付：320×64 圆角面板，原图填充是 alpha 83，会被二值化成实心");
+        Add("char_suteacher_portrait", 256, 384, AssetIntake.Kind.Pixel, 12, false,
+            null, false, "美术已交付：512×768 肖像。★ 全篇唯一给人看的正脸");
+        Add("char_laofan", 128, 192, AssetIntake.Kind.Pixel, 12, false,
+            null, false, "美术已交付：128×192，47 色，本来就接近像素画");
+        Add("char_suhang", 256, 384, AssetIntake.Kind.Pixel, 12, false,
+            null, false, "美术已交付：512×768。终章 HE 他被带走问话");
+        Add("prop_letter_written", 64, 64, AssetIntake.Kind.Pixel, 8, false,
+            null, false, "美术已交付：64×64 一张有字的纸");
+        Add("prop_mailbox", 64, 80, AssetIntake.Kind.Pixel, 10, false,
+            null, false, "美术已交付：64×80 红色信箱");
+        Add("prop_envelope_closed", 128, 128, AssetIntake.Kind.Pixel, 10, false,
+            null, false, "美术已交付：512×512 信封，缩到 128");
+
         // ★ 被取消的：程序生成比手画好，而且它本来就只是"三种字的质感"
         // （死亡证明 16 / 医院记录 16 / 火化证明 17，靠渲染参数区分）
     }
