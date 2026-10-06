@@ -181,8 +181,11 @@ public partial class RPGExplo : Node2D
     /// </summary>
     void CloseGaps()
     {
-        _closed = Dilate(_walk, 2);
-        _closed = Erode(_closed, 2);
+        // 半径 5 不是 2：碑前那片路的**卵石堆**在可走面上咬出 8~12px 的孔，
+        // r=2 缝不住，左上碑排的路整段断链（真人反馈"被石堆挡住"）。
+        // 闭运算只填小孔——大片草地被膨胀 5 后仍离路面太远，腐蚀后原样回去，不漏。
+        _closed = Dilate(_walk, 5);
+        _closed = Erode(_closed, 5);
     }
 
     bool[] Dilate(bool[] src, int r)

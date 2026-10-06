@@ -30,7 +30,12 @@ public partial class GlyphBaker : Node
     ///   （96px 字槽 → 12px 原生的位图字号）绘制，再 **最近邻 ×8 放大**。
     ///   笔画全部落在 8px 网格上，判定几何不变，像素反而更干净。
     /// </summary>
-    public const int PixelScale = 8;
+    /// <summary>
+    /// 位图字体时代=8（见上面的历史注释）。现在换 Noto Sans SC（矢量），
+    /// 96px 直接渲染天然锐利，缩放管道留而不发（改回 1）。
+    /// 万一又换回位图字体，把它调回 8 即可。
+    /// </summary>
+    public const int PixelScale = 1;
 
     private SubViewport? _vp;
     private Control? _canvas;
@@ -119,12 +124,27 @@ public partial class GlyphBaker : Node
     private static void Threshold(Image img, SurfaceModel sm, IReadOnlyList<Slot> slots)
     {
         // 先做一次"哪些像素有笔画"的判定
+        bool[,] raw = new bool[sm.W, sm.H];
         bool[,] on = new bool[sm.W, sm.H];
         for (int y = 0; y < sm.H && y < img.GetHeight(); y++)
         for (int x = 0; x < sm.W && x < img.GetWidth(); x++)
         {
             var px = img.GetPixel(x, y);
-            on[x, y] = px.A > 0.5f;      // ★ 硬阈值，不要抗锯齿
+            raw[x, y] = px.A > 0.45f;     // 矢量字体的 AA 边缘：0.45 收边
+        }
+
+        // Noto 96px 的笔画对"刻痕"偏瘦：阈值后做一次 3×3 膨胀加粗 1px
+        //（比 DrawString 的 outline 参数好传，也和像素时代的 8px 块判定兼容）
+        for (int y = 0; y < sm.H; y++)
+        for (int x = 0; x < sm.W; x++)
+        {
+            if (raw[x, y]) { on[x, y] = true; continue; }
+            for (int dy = -1; dy <= 1 && !on[x, y]; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int nx = x + dx, ny = y + dy;
+                if (nx >= 0 && ny >= 0 && nx < sm.W && ny < sm.H && raw[nx, ny]) { on[x, y] = true; break; }
+            }
         }
 
         // 再按每个字槽写入 Height / Batch

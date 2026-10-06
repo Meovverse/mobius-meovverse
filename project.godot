@@ -43,7 +43,7 @@ enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
 [gui]
 
-theme/custom_font="res://assets/fonts/fusion_pixel_12px.ttf"
+theme/custom_font="res://assets/fonts/ui_cjk.otf"
 
 [input]
 
