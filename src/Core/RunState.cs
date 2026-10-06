@@ -9,32 +9,68 @@ namespace MoShi.Core;
 /// <summary>玩家在这一周目里"记下"的东西。账本即存档 —— 这个对象就是 save.json。</summary>
 public sealed class RunState
 {
-    /// <summary>终章要用到的 flag。名字和 <c>doc/玩法设计.md</c> 第十三节一一对应。</summary>
+    /// <summary>
+    /// flag 表。★ 与 doc/剧本.md §3「flag 总表」一一对应 ——
+    /// 那是策划给的，本类跟着它走，不要自己加。
+    /// </summary>
     public static class Flag
     {
-        /// <summary>账本第一页背面那行"厚料立碑…"是否读过。HE 的前提。</summary>
+        /// <summary>S6 序章登记 / S10 系统复核 → 终章"砸底座"的知识前提。</summary>
+        public const string LedgerP6 = "ledger_p6";
+
+        /// <summary>S10 翻到账本第一页背面那行"厚料立碑…"。★ 没读 → 终章没有"砸底座"。</summary>
         public const string BacknoteRead = "ledger_backnote_read";
 
-        /// <summary>第一张拓片是否还在身上。</summary>
+        /// <summary>S9 每一次擦过头。</summary>
+        public const string OverWiped = "over_wiped_count";
+
+        /// <summary>S9 看完两处改动 → 进入第二章。</summary>
+        public const string SurfaceAnomaly = "surface_anomaly_found";
+
+        /// <summary>S7 真相层：碑面被磨改过。</summary>
+        public const string StoneAltered = "stone_altered";
+
+        /// <summary>S10 系统复核 / 成交日期。第三章用。</summary>
+        public const string SystemVerified = "system_verified";
+
+        /// <summary>S10 墓位成交日期（2006-04-26）。</summary>
+        public const string DeedDate = "deed_date";
+
+        /// <summary>S11 几张纸比对过了。</summary>
+        public const string PapersCompared = "papers_compared";
+
+        /// <summary>S12 查到韩梅这个人。</summary>
+        public const string HanmeiFound = "hanmei_found";
+
+        /// <summary>S12 确认她失踪了。</summary>
+        public const string HanmeiMissing = "hanmei_missing";
+
+        /// <summary>S13 查到韩湘这个身份。★ 第十章的突破口。</summary>
+        public const string HanxiangIdentity = "hanxiang_identity_found";
+
+        /// <summary>S14 石料的来路。</summary>
+        public const string StoneLotTraced = "stone_lot_traced";
+
+        /// <summary>S15 苏航来过。</summary>
+        public const string ConfrontedSuhang = "confronted_suhang";
+
+        /// <summary>S15 那个信封收了没有 → 结局的语气。</summary>
+        public const string TookEnvelope = "took_envelope";
+
+        /// <summary>S17 底座砸开了。</summary>
+        public const string BaseExposed = "base_exposed";
+
+        /// <summary>若保留拓片机制（S9）。</summary>
         public const string RubbingCarried = "rubbing_carried";
 
-        /// <summary>第五章复印件是否已入档。HE 完整版 vs 弱化版。</summary>
-        public const string DeedCached = "deed_cached";
+        /// <summary>S15「韩梅呢？」那句话，玩家打出来了没有。</summary>
+        public const string AskedHanmei = "asked_hanmei";
 
-        /// <summary>第四章选了哪个回答。</summary>
-        public const string Ch04Answer = "ch04_answer";
-
-        /// <summary>终章底座是否已被砸开。</summary>
-        public const string BaseExposed = "base_exposed";
+        /// <summary>S20 尾声「证明呢？」。</summary>
+        public const string AskedProof = "asked_proof";
 
         /// <summary>第一章是否已经清碑（不可逆）。</summary>
         public const string StoneCleaned = "stone_cleaned";
-
-        /// <summary>拓片是否还在工��箱里（放回去了 = 没带走证据）。</summary>
-        public const string RubbingLeft = "rubbing_left";
-
-        /// <summary>第一章三段是否都自己完成了（没看料头提示）。</summary>
-        public const string SelfFound = "self_found";
     }
 
     // ── 账本 ────────────────────────────────────────────────────────────
@@ -46,11 +82,11 @@ public sealed class RunState
 
     public HashSet<string> Flags { get; set; } = new();
 
-    /// <summary>第四章的回答：0=沉默 1="是您的" 2="是同名的人" 3=说实话</summary>
-    public int Ch04Answer
+    /// <summary>S15 里玩家的回答。0=沉默（5 秒不输入）1="韩梅呢？" 2=其它</summary>
+    public int ChapterAnswer
     {
-        get => Flags.Contains(Flag.Ch04Answer) ? Misc.GetValueOrDefault("ch04", 0) : -1;
-        set { Flags.Add(Flag.Ch04Answer); Misc["ch04"] = value; }
+        get => Misc.TryGetValue("s15_answer", out int v) ? v : -1;
+        set => Misc["s15_answer"] = value;
     }
 
     public int OverWipedCount
