@@ -153,7 +153,7 @@ public static class SlotRegistry
         Add("endcard_paper", 512, 288, AssetIntake.Kind.Background, 8, false,
             () => Art.Endcard(512, 288), false, "程序生成：纸纹 + 极暗");
         Add("sign_lu_shi", 160, 48, AssetIntake.Kind.Pixel, 8, false,
-            null, false, "[code] 程序用字体渲染「陆氏石刻」，SD 画不了汉字");
+            null, false, "[code] 程序用字体渲染「吴氏石刻」，SD 画不了汉字");
 
         // ── E2 美术已交付（来自 /Downloads/gamejam素材）─────────────────
         //

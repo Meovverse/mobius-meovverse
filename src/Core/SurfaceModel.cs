@@ -10,7 +10,7 @@ public enum Batch
     /// <summary>素石，没有刻痕。</summary>
     Blank = 0,
 
-    /// <summary>2021-05-17 陆昀手刻。</summary>
+    /// <summary>2021-05-17 老吴手刻。</summary>
     Luyun = 1,
 
     /// <summary>补刻。用的是新錾子，手劲没控制好。</summary>

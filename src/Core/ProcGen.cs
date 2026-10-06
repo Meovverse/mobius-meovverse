@@ -70,7 +70,7 @@ public static class ProcGen
     private static Image? _chiselA, _chiselB;
     private static Image? _dustN, _fiberN, _stoneN, _cementN;
 
-    /// <summary>刀口 A（陆昀那把錾子），缓存复用。</summary>
+    /// <summary>刀口 A（老吴那把錾子），缓存复用。</summary>
     public static Image ChiselA => _chiselA ??= ChiselA_();
 
     /// <summary>刀口 B（补刻），缓存复用。</summary>
@@ -148,7 +148,7 @@ public static class ProcGen
     }
 
     /// <summary>
-    /// ★ 刀口纹理 A —— 陆昀 2021 年刻的那把錾子。
+    /// ★ 刀口纹理 A —— 老吴 2021 年刻的那把錾子。
     ///
     /// 特征（程序版）：
     ///   · 横向条纹**长而连续**（>= 8px）
