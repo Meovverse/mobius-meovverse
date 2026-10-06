@@ -33,10 +33,10 @@ public partial class ChapterOne : Node2D
     RunState _save;
 
     Phase _phase = Phase.Wiping;
-    bool _endingOne;
+    bool _endingOne, _shot;
     bool _ready, _wipeHold, _traceHold;
     float _renderAcc;
-    int _dateSeen;
+    int _dateSeen, _shotF;
 
     public override async void _Ready()
     {
@@ -65,6 +65,7 @@ public partial class ChapterOne : Node2D
         _ready = true;
         _hint.Text = "按住右键擦。";
         Rebuild();
+        _shot = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0;
     }
 
     // ── 渲染：SurfaceModel → 像素（脏了才重画，节流到 ~20fps）──────────
@@ -80,7 +81,18 @@ public partial class ChapterOne : Node2D
             if (hv > 0) { float k = 1f - hv * 0.5f / 255f; r *= k; g *= k; b *= k; }   // 刻痕压暗
             if (bm[i] == (byte)Batch.Repair) { r += 20; g += 20; b += 16; }            // 补刻面偏新偏亮
             int d = dust[i];
-            if (d > 0) { float k = d / 255f * 0.82f; r = r * (1 - k) + 199 * k; g = g * (1 - k) + 196 * k; b = b * (1 - k) + 186 * k; }
+            if (d > 0)
+            {
+                // 数据层的 Dust 是 32px 颗粒（判定只看区域均值，粗没问题）；
+                // 但直接画出来是棋盘。叠一层逐像素哈希当砂粒，观感就对了——
+                // 只影响显示，判定永远读原始 Dust[]。
+                int x = i % W, y = i / W;
+                uint hh = (uint)(x * 73856093) ^ (uint)(y * 19349663);
+                hh ^= hh >> 13; hh *= 0x5bd1e995u; hh ^= hh >> 15;
+                float grain = (hh & 0xFF) / 255f;
+                float k = d / 255f * (0.60f + 0.40f * grain);
+                r = r * (1 - k) + 199 * k; g = g * (1 - k) + 196 * k; b = b * (1 - k) + 186 * k;
+            }
             int q = pile[i];
             if (q > 0) { float k = q / 255f * 0.38f; r = r * (1 - k) + 156 * k; g = g * (1 - k) + 148 * k; b = b * (1 - k) + 126 * k; }
             if (_sm.Crushed.Contains(i)) { r *= 0.74f; g *= 0.74f; b *= 0.76f; }       // 压进刻痕的暗脏
@@ -99,6 +111,17 @@ public partial class ChapterOne : Node2D
         if (!_ready) return;
         var dt = (float)delta;
         var m = GetGlobalMousePosition();
+
+        if (_shot && _shotF++ == 4 && System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot2") >= 0)
+            ForceCleanDate();
+        if (_shot && _shotF == 10)
+        {
+            var vp = GetViewport().GetTexture().GetImage();
+            vp.SavePng("res://data/gen/m2_chapter1" + (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot2") >= 0 ? "_clean" : "") + ".png");
+            GD.Print("[m2] shot vpC=" + vp.GetPixel(320, 180));
+            GetTree().Quit();
+            return;
+        }
 
         // F9：把日期区瞬间擦净——给节奏调试和验收截图用，正式版会摘掉
         if (Input.IsActionJustPressed("F9_debug_reveal")) ForceCleanDate();
