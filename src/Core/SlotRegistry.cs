@@ -117,8 +117,8 @@ public static class SlotRegistry
             () => ProcGen.SteleNew(320, 360), false, "程序生成两阶 + 窄亮接缝");
         Add("stele_A7_base", 320, 200, AssetIntake.Kind.Background, 12, false,
             () => ProcGen.SteleBase(320, 200), false, "程序生成十字接缝 + 细裂纹");
-        Add("stele_A7_full", 320, 360, AssetIntake.Kind.Pixel, 10, false,
-            null, true, "★ 碑的立体感（碑身+底座+草地）程序画不像，要美术");
+        Add("stele_A7_full", 128, 176, AssetIntake.Kind.Pixel, 40, true,
+            null, false, "★ 美术已交付（2026-10-06 第二批）：A 区 7 号整碑 128×176");
         Add("map_stone_carve", 640, 360, AssetIntake.Kind.Mask, 0, false,
             () => SteleBuilder.BuildBatchMap(), false,
             "[code] 程序从字形遮罩推导（SteleBuilder.MarkRepairBar）");
@@ -155,6 +155,39 @@ public static class SlotRegistry
         Add("prop_fence", 58, 42, AssetIntake.Kind.Pixel, 16, true, () => null!, false, "木栅栏一段，可平铺");
         Add("prop_pine", 62, 101, AssetIntake.Kind.Pixel, 20, true, () => null!, false, "松树");
         Add("prop_rock", 43, 43, AssetIntake.Kind.Pixel, 16, true, () => null!, false, "紫灰圆石（带底座）");
+
+        // ── 第二批美术交付（2026-10-06 14:52）。★ 键=文件名，自动发现 ──
+        Add("stele_big_02", 128, 176, AssetIntake.Kind.Pixel, 32, true, () => null!, false,
+            "大碑变体 02。A7 用 01；这两块铺 RPG 墓园做前景碑（P12 用）或碑排差异件");
+        Add("stele_big_03", 128, 176, AssetIntake.Kind.Pixel, 32, true, () => null!, false, "大碑变体 03");
+        Add("prop_ledger_page", 840, 1080, AssetIntake.Kind.Pixel, 96, false, () => null!, false,
+            "账本单页实拍级做旧纸（P3 双页的两张底纸都从它切）");
+        Add("ui_dialog_player", 320, 64, AssetIntake.Kind.Pixel, 8, true, () => null!, false,
+            "对话框底·黄（主角）。美术注：透明度可再略调高");
+        Add("ui_dialog_npc", 320, 64, AssetIntake.Kind.Pixel, 8, true, () => null!, false,
+            "对话框底·灰（非主角）");
+        Add("ui_frame_lace", 2400, 480, AssetIntake.Kind.Pixel, 8, true, () => null!, false,
+            "文本框上边花边 480×96×5 条装，可裁单条");
+        Add("ui_read_frame", 192, 272, AssetIntake.Kind.Pixel, 8, true, () => null!, false,
+            "查看文字文本框（空白）——特写阅读纸片的框底");
+        Add("ui_read_frame_tall", 960, 1360, AssetIntake.Kind.Pixel, 16, true, () => null!, false,
+            "查看文字文本框 download 版（大，含装饰），高栏纸片用");
+        Add("char_laofan_portrait", 256, 384, AssetIntake.Kind.Pixel, 16, true, () => null!, false,
+            "老樊肖像大图（美术已交付原尺寸 512×768，接管层缩到 256×384）。v3 改作墓园经办/殡仪馆窗口");
+        Add("char_wheelside", 96, 144, AssetIntake.Kind.Pixel, 24, true, () => null!, false,
+            "轮椅微侧全身（96×144）。★ v3 无此角色：入库备用，若做回忆版 2006 群像可点亮");
+        Add("logo_team_2", 256, 256, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "队标变体 2");
+        Add("logo_team_3", 256, 256, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "队标变体 3");
+
+        // ── 第二批：RPG 俯视地图（美术直接画好的整图，接管层按文件名发现）──
+        // 这三张是 960×720 整图，供 RPG 走动式场景当背景，不走 AssetIntake 缩放。
+        // 仅在此登记，方便美术对账时知道"办公室/档案室背景已有真图，程序生成版可退役"。
+        Add("map_graveyard_qingming", 960, 720, AssetIntake.Kind.Background, 40, false,
+            () => null!, false, "清明落成版墓园整图（与平时版同路网，只换雾/横幅/人群），RPGExplo --qingming 加载");
+        Add("map_office", 960, 720, AssetIntake.Kind.Background, 64, false,
+            () => null!, false, "★ 墓园办公室俯视整图。P5/P6 内景从此有真背景，可替换 bg_office_desk 程序版");
+        Add("map_archive", 960, 720, AssetIntake.Kind.Background, 40, false,
+            () => null!, false, "★ 档案室俯视整图（含架格）。P8 可替换 bg_archive_room 程序版");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光，程序版太糙");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
@@ -212,10 +245,10 @@ public static class SlotRegistry
             null, false, "[code] 程序用字体渲染 + 一道斜划");
 
         // ── G UI：程序绘制，不用贴图 ──
-        Add("ui_cursor_hand", 32, 32, AssetIntake.Kind.Pixel, 8, false,
-            null, false, "[code] 程序用 Draw API 画，不占贴图槽");
-        Add("ui_loupe_ring", 96, 96, AssetIntake.Kind.Pixel, 8, false,
-            null, false, "[code] 程序画圆环 + 边光。美术做不出这么干净的 3 阶金属");
+        Add("ui_cursor_hand", 64, 79, AssetIntake.Kind.Pixel, 12, true,
+            null, false, "★ 美术已交付：手形光标（点击查看）。之前是程序占位");
+        Add("ui_loupe_ring", 64, 64, AssetIntake.Kind.Pixel, 12, true,
+            null, false, "★ 美术已交付：放大镜。'看'动词的核心 UI");
         Add("ui_caliper", 480, 32, AssetIntake.Kind.Pixel, 8, false,
             null, false, "[code] 程序画，刻度线要对齐像素格");
         Add("ui_paper_sheet", 256, 320, AssetIntake.Kind.Pixel, 10, false,

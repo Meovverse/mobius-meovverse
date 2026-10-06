@@ -38,12 +38,23 @@ public partial class RPGExplo : Node2D
 
     public override void _Ready()
     {
-        var tex = ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard_clean.png");
-        _map = tex.GetImage();
+        // 第二批美术交付了清明落成版（终章 P10）：和平时版只差 5.2% 像素。
+        // ★ 但"加灰蓝雾"会让路色漂移，按颜色分路面直接失灵（实测路网少 18k px、
+        //   寻路失败）。所以：**可走面永远从剥离过的平时版算，清明版只换显示层**。
+        //   两版布局逐像素同构，这是合法的——雾不该改地形。
+        var clean = ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard_clean.png");
+        _map = clean.GetImage();
         _map.Convert(Image.Format.Rgb8);
         _mw = _map.GetWidth(); _mh = _map.GetHeight();
 
-        var bg = new Sprite2D { Texture = tex, Centered = false };
+        bool qingming = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "qingming") >= 0;
+        var bg = new Sprite2D
+        {
+            Texture = qingming
+                ? ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard_qingming.png")
+                : clean,
+            Centered = false,
+        };
         AddChild(bg);
 
         BuildWalkMask();
