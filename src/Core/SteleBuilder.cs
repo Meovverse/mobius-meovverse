@@ -189,6 +189,27 @@ public static class SteleBuilder
     ///   这里把找到的下标缓存起来。
     /// </summary>
     /// <summary>批次 ID 图（R 通道）。程序推导，美术不用做。</summary>
+    /// <summary>
+    /// 把 SurfaceModel 画成一帧 RGB 底图（石面本体 + 补刻区的"新石"微差）。
+    /// 尘埃/堆屑/压痕由场景层的渲染器叠加——底图是静态的，只算一次。
+    /// </summary>
+    public static byte[] RenderBase(SurfaceModel sm)
+    {
+        var stone = ProcGen.SteleFace(W, H);
+        var buf = new byte[W * H * 3];
+        for (int y = 0, i = 0; y < H; y++)
+        for (int x = 0; x < W; x++, i++)
+        {
+            var c = stone.GetPixel(x, y);
+            // 补刻的那一格，石头是新的：底色本身就偏亮一档（这是 clue_01 的视觉真相）
+            float k = sm.BatchMap[i] == (byte)Batch.Repair ? 1.10f : 1f;
+            buf[i * 3] = (byte)(c.R * 255 * k);
+            buf[i * 3 + 1] = (byte)(c.G * 255 * k);
+            buf[i * 3 + 2] = (byte)(c.B * 255 * k);
+        }
+        return buf;
+    }
+
     public static Image BuildBatchMap()
     {
         var sm = LoadBaked();

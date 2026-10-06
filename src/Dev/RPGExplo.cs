@@ -30,7 +30,7 @@ public partial class RPGExplo : Node2D
     Node2D _ysort;    // 树 + 人物同在一个 Y-Sort 容器，按脚底互相排序
     Vector2 _start, _goal;
     int _lastLeg = -1;
-    Sprite2D _player, _marker; Node2D _camOwner;
+    Sprite2D _player, _marker; Node2D _camOwner; Label _prompt;
     Vector2 _pos;
     List<Vector2> _route; int _leg;
     bool _manual, _arrived, _free;
@@ -365,6 +365,19 @@ public partial class RPGExplo : Node2D
 
         var mt = (float)Godot.Time.GetTicksMsec() / 1000f;
         _marker.Position = Goal + new Vector2(0, Mathf.Sin(mt * 3f) * 2f - 34);
+        // 走到碑前（或自动抵达）→ Enter 切特写。M2 的第一条接缝。
+        bool near = (_pos - GoalStand).Length() < 26f;
+        if (near || _arrived)
+        {
+            if (_prompt == null)
+            {
+                _prompt = new Label { Position = new Vector2(0, 40), Size = new Vector2(960, 28),
+                    HorizontalAlignment = HorizontalAlignment.Center, Text = "Enter：凑近看碑面" };
+                var cl = new CanvasLayer(); cl.AddChild(_prompt); AddChild(cl);
+            }
+            if (Input.IsActionJustPressed("ui_accept"))
+                GetTree().ChangeSceneToFile("res://scenes/ChapterOne.tscn");
+        }
         if (_frame == 8 && !_free) Shot("rpg_start");
         if (_frame == 150 && !_free) Shot("rpg_mid");
         if (_arrived && !_manual && _frame % 30 == 0 && _frame < 3000) Shot("rpg_goal", once: true);
