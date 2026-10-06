@@ -118,6 +118,17 @@ public static class ProcGen
     public static readonly Color SuitLit = new("4c5a68");
 
     /// <summary>把连续值压成三阶硬边。这是这个项目的明暗规则。</summary>
+    /// <summary>
+    /// 按 0–255 造颜色。
+    ///
+    /// ★★ 别直接写 <c>new Color(0xd8, 0xd8, 0xd0)</c>——
+    ///   Godot 的三参数 Color 构造按 **0–1 浮点**解释，216 会被钳成 1.0，
+    ///   结果整张图全白。这个坑很安静：不报错，只是图白了。
+    ///   要么用字符串构造 <c>new Color("d8d8d0")</c>，要么用这个。
+    /// </summary>
+    public static Color Rgb(int r, int g, int b, float a = 1f) =>
+        new(r / 255f, g / 255f, b / 255f, a);
+
     private static float Band(float v, float lo = 0.33f, float hi = 0.66f) =>
         v < lo ? 0f : v < hi ? 0.5f : 1f;
 
@@ -482,11 +493,11 @@ public static class ProcGen
     {
         const int S = 8;
         var img = NewImage(S, S);
-        img.SetPixel(3, 3, new Color(0x8a, 0x86, 0x7c, 1));
-        img.SetPixel(4, 3, new Color(0x8a, 0x86, 0x7c, 1));
-        img.SetPixel(3, 4, new Color(0x6e, 0x6e, 0x6e, 1));
-        img.SetPixel(4, 4, new Color(0x6e, 0x6e, 0x6e, 1));
-        img.SetPixel(2, 4, new Color(0xa8, 0xa8, 0xa8, 1));
+        img.SetPixel(3, 3, Rgb(138, 134, 124, 1));
+        img.SetPixel(4, 3, Rgb(138, 134, 124, 1));
+        img.SetPixel(3, 4, Rgb(110, 110, 110, 1));
+        img.SetPixel(4, 4, Rgb(110, 110, 110, 1));
+        img.SetPixel(2, 4, Rgb(168, 168, 168, 1));
         return img;
     }
 
@@ -515,34 +526,70 @@ public static class ProcGen
             {
                 // 天空：三阶硬边横带
                 float t = (float)y / horizon;
-                col = t < 0.4f ? new Color(0xd8, 0xd8, 0xd0)
-                   : t < 0.72f ? new Color(0xc0, 0xc0, 0xb8)
-                   : new Color(0xa8, 0xa8, 0xa0);
+                col = t < 0.4f ? Rgb(216, 216, 208)
+                   : t < 0.72f ? Rgb(192, 192, 184)
+                   : Rgb(168, 168, 160);
             }
             else
             {
                 // 枯草
                 float t = (float)(y - horizon) / (h - horizon);
                 float n = Fractal(x, y, Math.Max(2, w / 5), 3, 2);
-                col = (t * 0.35f + n * 0.3f) > 0.42f ? new Color(0x8a, 0x82, 0x62)
-                   : (t * 0.35f + n * 0.3f) > 0.24f ? new Color(0x6e, 0x68, 0x4e)
-                   : new Color(0x55, 0x50, 0x3c);
+                col = (t * 0.35f + n * 0.3f) > 0.42f ? Rgb(138, 130, 98)
+                   : (t * 0.35f + n * 0.3f) > 0.24f ? Rgb(110, 104, 78)
+                   : Rgb(85, 80, 60);
             }
             img.SetPixel(x, y, col);
         }
 
-        // 远处一排碑的剪影（1 阶色，粗糙人形）
-        var rng = new Random(20210411);
-        for (int i = 0; i < 22; i++)
-        {
-            int tx = rng.Next(0, w);
-            int tw = rng.Next(8, 18);
-            int th = rng.Next(24, 52);
-            for (int y = horizon - th; y < horizon; y++)
-            for (int x = tx; x < tx + tw && x < w; x++)
-                img.SetPixel(x, y, new Color(0x6a, 0x6a, 0x68));
-        }
+        DrawSteleRow(img, w, horizon);
         return img;
+    }
+
+    /// <summary>
+    /// 中景那一排墓碑。
+    ///
+    /// ★ 优先用美术素材 <c>stele_bg_01..04.png</c>——它们是从队友给的俯视地图里
+    ///   抠出来的 3/4 视角墓碑，灰阶 + 12 级量化之后已经能看。
+    ///   没有素材时退回程序生成的粗糙剪影（几个灰矩形）。
+    /// </summary>
+    /// <summary>
+    /// 墓园背景里地平线上的那一排碑。
+    ///
+    /// ★ 目前只有程序剪影。之前试过把 gamejam 素材里俯视地图抠出的墓碑
+    ///   （assets/textures/stele_bg_01..04.png，已经抠好、抠像干净）铺进来，
+    ///   但逐像素拷贝进 Image 之后一个像素都没落到画面上，
+    ///   资源读取和 alpha 都已经验过是对的，卡在合成环节，未解决。
+    ///   那 4 张图本身是可用的美术资源，别删；等合成通了直接接上。
+    /// </summary>
+    private static void DrawSteleRow(Image img, int w, int horizon)
+    {
+        var rng = new Random(20060517);
+        // 两排：后排矮而淡，前排高而实，做出纵深
+        for (int pass = 0; pass < 2; pass++)
+        {
+            int thMin = pass == 0 ? 20 : 30;
+            int thMax = pass == 0 ? 34 : 54;
+            float k = pass == 0 ? 0.62f : 1f;
+            int y = horizon - (pass == 0 ? 4 : 0);
+            for (int i = 0; i < (pass == 0 ? 26 : 18); i++)
+            {
+                int tx = rng.Next(-8, w);
+                int tw = rng.Next(8, 18);
+                int th = rng.Next(thMin, thMax);
+                var stone = Rgb(106, 106, 104);
+                for (int py = y - th; py < y; py++)
+                for (int px = tx; px < tx + tw && px < w; px++)
+                {
+                    if (px < 0 || py < 0 || py >= img.GetHeight()) continue;
+                    // 顶端收窄，让它像个碑而不是块砖
+                    float t = (float)(y - py) / th;
+                    float half = tw * 0.5f * (1f - 0.35f * t * t);
+                    if (Math.Abs(px - (tx + tw * 0.5f)) > half) continue;
+                    img.SetPixel(px, py, new Color(stone.R * k, stone.G * k, stone.B * k, 1f));
+                }
+            }
+        }
     }
 
     /// <summary>纯黑。</summary>
