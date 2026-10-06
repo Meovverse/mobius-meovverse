@@ -44,7 +44,7 @@ public partial class GlyphTest : Control
 
     public override async void _Ready()
     {
-        GD.Print("════════ 墓石 · M1 字形管线诊断 ════════");
+        GD.Print("════════ 墓时 · M1 字形管线诊断 ════════");
 
         var font = LoadFont();
         if (font == null)

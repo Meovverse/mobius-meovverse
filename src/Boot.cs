@@ -28,7 +28,7 @@ public partial class Boot : Control
         {
             Position = new Vector2(24, 24),
             Size = new Vector2(400, 24),
-            Text = "墓石",
+            Text = "墓时",
         };
         AddChild(text);
 

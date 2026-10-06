@@ -146,6 +146,92 @@ public static class Art
         return img;
     }
 
+    /// <summary>P1 · 铺子内景。木头搭的门面、堆着的山西黑、蒙布的尚未立起的石碑。</summary>
+    public static Image BgShopInterior(int w, int h)
+    {
+        var img = BgShop(w, h);
+        int floorY = h * 3 / 5;
+
+        for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+        {
+            var c = img.GetPixel(x, y);
+            if (y < floorY)
+            {
+                // 木板墙：横向板缝
+                bool seam = (y % 11) < 2;
+                float grain = ProcGen.FractalAccessor(x, y, 48, 83, 2);
+                float v = (seam ? 0.16f : 0.34f + grain * 0.16f);
+                img.SetPixel(x, y, new Color(v, v * 0.96f, v * 0.90f, 1));
+            }
+            else
+            {
+                // 水泥地 + 石粉
+                float n = ProcGen.FractalAccessor(x, y, 40, 89, 2);
+                float v = 0.22f + n * 0.18f;
+                img.SetPixel(x, y, new Color(v, v, v * 0.98f, 1));
+            }
+        }
+
+        // 堆着的石料：几块深色长方体（轮廓清楚，不画纹理）
+        var rng = new System.Random(20060517);
+        for (int i = 0; i < 7; i++)
+        {
+            int bx = 30 + i * 82 + rng.Next(-8, 8);
+            int by = floorY + 20 + rng.Next(-10, 26);
+            int bw = 58 + rng.Next(0, 22);
+            int bh = 16 + rng.Next(0, 12);
+            FillRect(img, bx, by, bw, bh, ProcGen.StoneDeep);
+            FillRect(img, bx, by, bw, 2, ProcGen.StoneLit);
+            FillRect(img, bx, by + bh - 2, bw, 2, ProcGen.StoneShade);
+        }
+
+        // 蒙着布的碑：一块竖着的浅色长方，布的褶皱用竖条表现
+        int cx = w / 2 - 40, cy = floorY - 70;
+        FillRect(img, cx, cy, 80, 110, ProcGen.PaperOld);
+        for (int x = cx + 3; x < cx + 77; x += 7)
+            FillRect(img, x, cy, 2, 110, ProcGen.PaperMid);
+
+        return img;
+    }
+
+    /// <summary>P7 · 窗口柜台（殡仪馆 / 医院档案室 / 派出所共用，换牌子）。</summary>
+    public static Image BgCounter(int w, int h)
+    {
+        var img = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+        int counterY = h * 2 / 3;
+
+        for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+        {
+            float v;
+            if (y < counterY - 60)
+            {
+                // 上方：机构牌子那一带，压暗
+                v = 0.18f;
+            }
+            else if (y < counterY)
+            {
+                // 玻璃窗：一道斜向反光
+                float diag = (float)x / w * 0.5f + (float)y / h * 0.5f;
+                float g = (diag > 0.55f && diag < 0.68f) ? 1.9f : 1f;
+                v = 0.24f * g;
+            }
+            else
+            {
+                // 柜台面：木纹 + 台灯的一小片光
+                float grain = ProcGen.FractalAccessor(x, y, 48, 97, 2);
+                float lamp = 1f - Mathf.Min(1f, Mathf.Pow(Mathf.Abs(x - w * 0.5f) / (w * 0.30f), 2f));
+                v = (0.26f + grain * 0.14f) * (1f + lamp * 0.9f);
+            }
+            img.SetPixel(x, y, new Color(v, v * 0.98f, v * 0.94f, 1));
+        }
+
+        // 台面的一道亮边
+        FillRect(img, 0, counterY - 2, w, 2, ProcGen.StoneLit);
+        return img;
+    }
+
     // ── 角色（只做剪影，因为全篇不画正脸）─────────────────────────────
 
     /// <summary>老吴背影：蹲姿，只有轮廓 + 一块背光面。底边对齐 y = h。</summary>

@@ -22,6 +22,50 @@ namespace MoShi.Core;
 /// </summary>
 public static class SlotRegistry
 {
+    /// <summary>
+    /// ★ Plate = 一格画面底板（doc/分镜稿.md §1 的 P1–P12）。
+    ///
+    /// 分镜稿把全篇 12 格底板列成一张表，并在"要美术交的"一栏里
+    /// **直接沿用了本类的槽位名**（bg_graveyard_area_A / char_luyun_back …）。
+    /// 所以本类就是那张表的机器可读版本。
+    ///
+    /// 复用价值很高：一个 Plate 在多场之间复用（S1/S14/S15/S16/S20 都用 P1），
+    /// 所以**底板是这份清单里最安全的一类资产**。
+    /// </summary>
+    public enum Plate
+    {
+        P1,   // 铺子 · 内（木头门面、堆着的石料、蒙布的石碑）
+        P2,   // 石面 · 全屏（碑面本体 Base + Detail）
+        P3,   // 登记本 · 纸面
+        P4,   // 纸 · 全屏（料单/事故报告/各种记录，共用一套纸面样式）
+        P5,   // 办公室 · 桌面（木纹 + CRT）
+        P6,   // 老系统 · 屏幕（灰蓝底白字）
+        P7,   // 窗口 · 柜台（殡仪馆/医院档案室/派出所，换牌子）
+        P8,   // 档案室（格架）
+        P9,   // 墓区 · 2026（冷灰）
+        P10,  // 墓区 · 清明（雾 + 新碑）
+        P11,  // 底座 · 接缝 / 垫石
+        P12,  // 黑场（所有字幕卡与结局文字）
+    }
+
+    /// <summary>哪个槽位提供哪一格底板。对照 doc/分镜稿.md §1。</summary>
+    public static readonly Dictionary<Plate, string> PlateSource = new()
+    {
+        [Plate.P1] = "bg_shop_interior",
+        [Plate.P2] = "stele_A7_face_base",
+        [Plate.P3] = "prop_ledger_spread",
+        [Plate.P4] = "prop_paper_sheet",
+        [Plate.P5] = "bg_office_desk",
+        [Plate.P6] = "ui_system_screen",
+        [Plate.P7] = "bg_counter",
+        [Plate.P8] = "bg_archive_room",
+        [Plate.P9] = "bg_graveyard_area_A",
+        [Plate.P10] = "bg_cemetery_qingming",
+        [Plate.P11] = "stele_A7_base",
+        [Plate.P12] = "endcard_paper",
+    };
+
+
     public sealed record Slot(
         string Key,
         int W,
@@ -81,30 +125,64 @@ public static class SlotRegistry
 
         // ── C 背景：程序版能跑但很平。美术做这几张性价比最高 ──
         Add("bg_graveyard_area_A", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgGraveyard(640, 360), true, "★ 程序版只是色带+剪影；要石头的质感必须靠人/SD");
+            () => Art.BgGraveyard(640, 360), true,
+            "远景=地图/墓地.png 顶部横带重处理，中景=抠出的真碑；石头质感仍要人/SD");
         Add("bg_cemetery_qingming", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgGraveyard(640, 360), true, "★ 同上，且要和 C1 是同一个地方");
+
+        // ── 从 地图/墓地.png 复用出来的素材。都是已抠好的可用资源 ──
+        Add("bg_graveyard_far", 640, 224, AssetIntake.Kind.Pixel, 12, true,
+            () => null!, false,
+            "墓地远景层：顶部横带去色+压对比+模糊。俯视原图不能直接当背景，"
+            + "这么处理后不再读作俯视，所以能留");
+        Add("stele_bg_01", 28, 52, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 A");
+        Add("stele_bg_02", 28, 33, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 B");
+        Add("stele_bg_03", 24, 34, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的墓碑 C");
+        Add("stele_bg_04", 52, 35, AssetIntake.Kind.Pixel, 8, true, () => null!, false, "墓地抠出的宽碑 D");
+
+        // ── 墓地.png 里抠出的其余道具。都是彩色原像素，未去色，供任意场景复用 ──
+        Add("prop_chapel", 195, 195, AssetIntake.Kind.Pixel, 32, true, () => null!, false,
+            "红瓦砖教堂（守墓人小屋的现成底子），带窗和门口绿植");
+        Add("prop_well", 82, 62, AssetIntake.Kind.Pixel, 24, true, () => null!, false, "石砌水井");
+        Add("prop_bench", 62, 50, AssetIntake.Kind.Pixel, 20, true, () => null!, false,
+            "木指路牌（键名沿用旧称，图是双横板路牌）");
+        // ★ 键名必须等于文件名：对账按 key.png 找。别加 plate_ 前缀，
+        //   上次这么命名结果"已交付"被报成"无贴图"。
+        Add("prop_mailbox_map", 42, 54, AssetIntake.Kind.Pixel, 24, true, () => null!, false,
+            "地图抠出的红邮筒（美术包的 prop_mailbox 是商店场景 64×80 那张，别混）。"
+            + "★ 新剧本里它是'这里一直有人来'的反证，用之前想清楚");
+        Add("prop_bush", 44, 42, AssetIntake.Kind.Pixel, 20, true, () => null!, false, "白花灌木");
+        Add("prop_fence", 58, 42, AssetIntake.Kind.Pixel, 16, true, () => null!, false, "木栅栏一段，可平铺");
+        Add("prop_pine", 62, 101, AssetIntake.Kind.Pixel, 20, true, () => null!, false, "松树");
+        Add("prop_rock", 43, 43, AssetIntake.Kind.Pixel, 16, true, () => null!, false, "紫灰圆石（带底座）");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光，程序版太糙");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgArchive(640, 360), true, "★ 几百个格架，程序版只是示意");
         Add("bg_shop_front", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgShop(640, 360), false, "程序生成：卷帘门条纹 + 地上石粉");
+        // ★ 新增：P1 铺子内景。S1/S14/S15/S16/S20 五场共用，是复用面最大的一张
+        Add("bg_shop_interior", 640, 360, AssetIntake.Kind.Background, 16, false,
+            () => Art.BgShopInterior(640, 360), true,
+            "★ P1 铺子内景。五场共用，复用面最大，但程序版画不出木头和石料的质感");
         Add("bg_title_shopfront", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgRain(640, 360), false, "程序生成：雨夜");
 
         // ── D 角色：全篇不画正脸，剪影程序能顶，但姿态是表演，要美术 ──
         Add("char_luyun_back", 160, 240, AssetIntake.Kind.Pixel, 10, false,
-            () => Art.CharLuYunBack(160, 240), true, "★ 蹲姿 + 伸手，是终章唯一的表演");
+            () => Art.CharLuYunBack(160, 240), true,
+            "★ 老吴背影。★ 2006 四十多岁 / 2026 六十多岁 —— 需要老年版，终章唯一的表演");
+        // ★ 2026 剧本里苏老师这个角色不存在了。这张已交付的肖像改作韩梅的档案照。
         Add("char_suteacher_wheelchair", 160, 220, AssetIntake.Kind.Pixel, 10, false,
-            () => Art.CharSuTeacher(160, 220), true,
-            "★ 她伸手摸碑是第四章的核心镜头，剪影做不出分量");
+            () => Art.CharSuTeacher(160, 220), false,
+            "★ 程序剪影。2026 版无此人；已交付的 char_suteacher_portrait 改作韩梅档案照");
         Add("char_photographer", 120, 200, AssetIntake.Kind.Pixel, 10, false,
             () => Art.CharPhotographer(120, 200), false, "程序生成剪影（1 阶色）");
 
         // ── E 道具 ──
-        Add("prop_ledger_page", 280, 360, AssetIntake.Kind.Pixel, 10, false,
-            () => ProcGen.PaperSheet(280, 360), false, "程序生成纸页（边缘抖动 + 1px 暗边）");
+        Add("prop_ledger_spread", 560, 320, AssetIntake.Kind.Pixel, 12, false,
+            () => ProcGen.PaperSpread(276, 320), false,
+            "P3 双页：左页 2006 两行／右页 2026 十八行线索。★ 本子上的字全是程序叠的");
         Add("prop_ledger_cover", 300, 380, AssetIntake.Kind.Pixel, 10, false,
             null, false, "[code] 程序生成封面 + 内衬衬纸；★ 里面那行字程序叠");
         Add("prop_scrap_stone", 96, 96, AssetIntake.Kind.Pixel, 10, false,
@@ -143,6 +221,15 @@ public static class SlotRegistry
         Add("ui_paper_sheet", 256, 320, AssetIntake.Kind.Pixel, 10, false,
             () => ProcGen.PaperSheet(256, 320), false, "程序生成 9-patch 纸底");
 
+        // ── P7 窗口柜台（2026 剧本新增）──────────────────────────────
+        Add("bg_counter", 640, 360, AssetIntake.Kind.Background, 16, false,
+            () => Art.BgCounter(640, 360), false,
+            "[code] 程序生成：柜台 + 玻璃 + 一个窗口。殡仪馆/医院/派出所共用，换牌子");
+        Add("ui_system_screen", 320, 200, AssetIntake.Kind.Pixel, 8, false,
+            null, false, "[code] 程序用 Label 画的 Control。P6 老系统屏幕，灰蓝底白字");
+        Add("prop_paper_sheet", 256, 320, AssetIntake.Kind.Pixel, 10, false,
+            () => ProcGen.PaperSheet(256, 320), false, "程序生成 P4 全屏纸面：所有文书共用一套");
+
         // ── FX ──
         Add("fx_dust_particle", 1, 1, AssetIntake.Kind.Pixel, 2, false,
             () => ProcGen.DustParticle, false, "程序生成单像素");
@@ -167,7 +254,7 @@ public static class SlotRegistry
         Add("char_suteacher_portrait", 256, 384, AssetIntake.Kind.Pixel, 12, false,
             null, false, "美术已交付：512×768 肖像。★ 全篇唯一给人看的正脸");
         Add("char_laofan", 128, 192, AssetIntake.Kind.Pixel, 12, false,
-            null, false, "美术已交付：128×192，47 色，本来就接近像素画");
+            null, false, "美术已交付。★ 2026 版无老樊此人，可改作墓园经办 / 殡仪馆窗口");
         Add("char_suhang", 256, 384, AssetIntake.Kind.Pixel, 12, false,
             null, false, "美术已交付：512×768。终章 HE 他被带走问话");
         Add("prop_letter_written", 64, 64, AssetIntake.Kind.Pixel, 8, false,

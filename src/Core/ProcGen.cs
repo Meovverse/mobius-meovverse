@@ -118,6 +118,17 @@ public static class ProcGen
     public static readonly Color SuitLit = new("4c5a68");
 
     /// <summary>把连续值压成三阶硬边。这是这个项目的明暗规则。</summary>
+    /// <summary>
+    /// 按 0–255 造颜色。
+    ///
+    /// ★★ 别直接写 <c>new Color(0xd8, 0xd8, 0xd0)</c>——
+    ///   Godot 的三参数 Color 构造按 **0–1 浮点**解释，216 会被钳成 1.0，
+    ///   结果整张图全白。这个坑很安静：不报错，只是图白了。
+    ///   要么用字符串构造 <c>new Color("d8d8d0")</c>，要么用这个。
+    /// </summary>
+    public static Color Rgb(int r, int g, int b, float a = 1f) =>
+        new(r / 255f, g / 255f, b / 255f, a);
+
     private static float Band(float v, float lo = 0.33f, float hi = 0.66f) =>
         v < lo ? 0f : v < hi ? 0.5f : 1f;
 
@@ -350,6 +361,36 @@ public static class ProcGen
     // ── 纸 ──────────────────────────────────────────────────────────────
 
     /// <summary>纸页底（带 alpha 的竖版纸）。程序版：边缘微不规则 + 1px 暗边。</summary>
+    /// <summary>
+    /// P3 登记本 · 双页：左页 2006（两行）／右页 2026（18 行线索），中间一道装订缝。
+    /// 新剧本（墓时）把线索表画在这本子上，所以它不再是单页纸。
+    /// </summary>
+    public static Image PaperSpread(int pageW, int h)
+    {
+        int gap = 8;
+        var img = Image.CreateEmpty(pageW * 2 + gap, h, false, Image.Format.Rgba8);
+        img.Fill(Rgb(96, 84, 68));                       // 书脊：露出的封面布纹
+        var l = PaperSheet(pageW, h);
+        var r = PaperSheet(pageW, h);
+        img.BlitRect(l, new Rect2I(0, 0, pageW, h), new Vector2I(0, 0));
+        img.BlitRect(r, new Rect2I(0, 0, pageW, h), new Vector2I(pageW + gap, 0));
+        // 装订缝两侧压一点影，双页才有"摊开"的体积
+        for (int y = 0; y < h; y++)
+        {
+            for (int k = 0; k < gap; k++)
+            {
+                float sh = k < gap / 2 ? 0.72f + 0.28f * (k / (float)(gap / 2))
+                                       : 0.72f + 0.28f * ((gap - 1 - k) / (float)(gap / 2));
+                img.SetPixel(pageW + k, y, new Color(96 * sh / 255f, 84 * sh / 255f, 68 * sh / 255f, 1f));
+            }
+            var le = img.GetPixel(pageW - 1, y);
+            var re = img.GetPixel(pageW + gap, y);
+            img.SetPixel(pageW - 1, y, new Color(le.R * 0.9f, le.G * 0.9f, le.B * 0.9f, 1f));
+            img.SetPixel(pageW + gap, y, new Color(re.R * 0.9f, re.G * 0.9f, re.B * 0.9f, 1f));
+        }
+        return img;
+    }
+
     public static Image PaperSheet(int w, int h)
     {
         var img = NewImage(w, h);
@@ -482,11 +523,11 @@ public static class ProcGen
     {
         const int S = 8;
         var img = NewImage(S, S);
-        img.SetPixel(3, 3, new Color(0x8a, 0x86, 0x7c, 1));
-        img.SetPixel(4, 3, new Color(0x8a, 0x86, 0x7c, 1));
-        img.SetPixel(3, 4, new Color(0x6e, 0x6e, 0x6e, 1));
-        img.SetPixel(4, 4, new Color(0x6e, 0x6e, 0x6e, 1));
-        img.SetPixel(2, 4, new Color(0xa8, 0xa8, 0xa8, 1));
+        img.SetPixel(3, 3, Rgb(138, 134, 124, 1));
+        img.SetPixel(4, 3, Rgb(138, 134, 124, 1));
+        img.SetPixel(3, 4, Rgb(110, 110, 110, 1));
+        img.SetPixel(4, 4, Rgb(110, 110, 110, 1));
+        img.SetPixel(2, 4, Rgb(168, 168, 168, 1));
         return img;
     }
 
@@ -515,34 +556,187 @@ public static class ProcGen
             {
                 // 天空：三阶硬边横带
                 float t = (float)y / horizon;
-                col = t < 0.4f ? new Color(0xd8, 0xd8, 0xd0)
-                   : t < 0.72f ? new Color(0xc0, 0xc0, 0xb8)
-                   : new Color(0xa8, 0xa8, 0xa0);
+                col = t < 0.4f ? Rgb(216, 216, 208)
+                   : t < 0.72f ? Rgb(192, 192, 184)
+                   : Rgb(168, 168, 160);
             }
             else
             {
                 // 枯草
                 float t = (float)(y - horizon) / (h - horizon);
-                float n = Fractal(x, y, Math.Max(2, w / 5), 3, 2);
-                col = (t * 0.35f + n * 0.3f) > 0.42f ? new Color(0x8a, 0x82, 0x62)
-                   : (t * 0.35f + n * 0.3f) > 0.24f ? new Color(0x6e, 0x68, 0x4e)
-                   : new Color(0x55, 0x50, 0x3c);
+                // 低频起伏用正弦而不是 Fractal：Fractal 的实际取值范围没保证，
+                // 试过 128/58/16/32 四种周期，出来要么是一片平板、要么是方块棋盘。
+                // 正弦的值域是确定的 [0,1]，低频斑驳交给它。
+                float n = 0.5f + 0.5f * Mathf.Sin(x * 0.031f + y * 0.017f)
+                                     * Mathf.Cos(x * 0.011f - y * 0.023f);
+                // 再叠一层逐像素抖动，把 16px 晶格之间的平滑过渡打碎
+                uint hh = (uint)(x * 73856093) ^ (uint)(y * 19349663);
+                hh ^= hh >> 13; hh *= 0x5bd1e995u; hh ^= hh >> 15;
+                float dith = (hh & 0xFFFF) / 65535f;
+                // 枯草：留一点暖色免得画面死掉，但不能暖到跟灰阶场景脱节。
+                // 用连续插值而不是硬阈值分三档——硬阈值在低频噪声上会出来一块块方斑。
+                // v 要钳位：Fractal 叠三个倍频会超过 1，Lerp 权重越界后颜色会冲成白块
+                float v = Mathf.Clamp(0.40f + t * 0.24f + (n - 0.5f) * 0.24f + (dith - 0.5f) * 0.10f, 0f, 1f);
+                col = v < 0.30f
+                    ? Rgb(76, 76, 65).Lerp(Rgb(100, 99, 84), Mathf.Clamp(v / 0.30f, 0f, 1f))
+                    : Rgb(100, 99, 84).Lerp(Rgb(126, 124, 106), Mathf.Clamp((v - 0.30f) / 0.35f, 0f, 1f));
             }
             img.SetPixel(x, y, col);
         }
 
-        // 远处一排碑的剪影（1 阶色，粗糙人形）
-        var rng = new Random(20210411);
-        for (int i = 0; i < 22; i++)
-        {
-            int tx = rng.Next(0, w);
-            int tw = rng.Next(8, 18);
-            int th = rng.Next(24, 52);
-            for (int y = horizon - th; y < horizon; y++)
-            for (int x = tx; x < tx + tw && x < w; x++)
-                img.SetPixel(x, y, new Color(0x6a, 0x6a, 0x68));
-        }
+        DrawFarLayer(img, w, horizon);
+        DrawSteleRow(img, w, horizon);
         return img;
+    }
+
+    /// <summary>
+    /// 中景那一排墓碑。
+    ///
+    /// ★ 优先用美术素材 <c>stele_bg_01..04.png</c>——它们是从队友给的俯视地图里
+    ///   抠出来的 3/4 视角墓碑，灰阶 + 12 级量化之后已经能看。
+    ///   没有素材时退回程序生成的粗糙剪影（几个灰矩形）。
+    /// </summary>
+    /// <summary>
+    /// 地平线以上的远景层。
+    ///
+    /// 用俯视素材 <c>地图/墓地.png</c> 顶部横带（y 0..336，避开教堂/水井/邮筒/雏菊）
+    /// 缩到 640 宽，去色、压对比、竖向渐变、轻微模糊之后当大气远景。
+    /// 原图是俯视地图，直接当背景会和"平视读碑面"的玩法打架；
+    /// 这么处理之后它不再读作俯视，只是一层雾里的远景——所以能留。
+    /// </summary>
+    private static void DrawFarLayer(Image img, int w, int horizon)
+    {
+        var path = "res://assets/textures/bg_graveyard_far.png";
+        if (!ResourceLoader.Exists(path)) return;
+        var far = ResourceLoader.Load<Texture2D>(path)?.GetImage();
+        if (far == null) return;
+        far.Convert(Image.Format.Rgba8);
+
+        int fh = Math.Min(far.GetHeight(), horizon);
+        // BlitRect 是 C 层整块拷贝；逐像素 SetPixel 要跑 14 万次，没必要。
+        img.BlitRect(far, new Rect2I(0, 0, far.GetWidth(), fh), new Vector2I(0, horizon - fh));
+
+        // 远景比天空矮时，用它的顶行往上补满，否则地平线以上会留一条硬边
+        int top = horizon - fh;
+        for (int y = 0; y < top; y++)
+        {
+            var row = far.GetPixel(0, 0);
+            for (int x = 0; x < w; x++) img.SetPixel(x, y, row);
+        }
+
+        // 远景底部和地平线之间压一道渐变，避免出现一条硬边
+        for (int i = 0; i < 10; i++)
+        {
+            float t = i / 9f;
+            var c = img.GetPixel(w / 2, horizon - 10 + i);
+            float k = 0.86f + 0.14f * t;
+            var row = new Color(c.R * k, c.G * k, c.B * k, 1f);
+            for (int x = 0; x < w; x++) img.SetPixel(x, horizon - 10 + i, row);
+        }
+    }
+
+    /// <summary>
+    /// 墓园背景里地平线上的那一排碑。
+    ///
+    /// 墓碑本体是从俯视素材 <c>地图/墓地.png</c> 里抠出来的真实像素
+    /// （<c>assets/textures/stele_bg_01..04.png</c>，已转灰阶+抠成透明背景）。
+    /// 整张地图不作为背景——视角/色彩/气氛/比例都对不上，只有碑能用。
+    ///
+    /// ★ 这里有两个静默到不报错的坑，都踩过：
+    ///   1) <c>new Color(0xd8, 0xd8, 0xd0)</c> 的参数是 0–1 浮点，216 会钳成 1.0 → 全白。要用 <see cref="Rgb"/>。
+    ///   2) <c>Color.A</c> 是 0–1 浮点。写 <c>c.A &lt; 128</c> 判断透明会<b>恒为真</b>，
+    ///      结果每个像素都被跳过，一个碑都画不出来。判断透明一律用 <c>0.5f</c>。
+    /// </summary>
+    private static void DrawSteleRow(Image img, int w, int horizon)
+    {
+        var stones = new System.Collections.Generic.List<Image>();
+        for (int i = 1; i <= 4; i++)
+        {
+            var path = $"res://assets/textures/stele_bg_{i:00}.png";
+            if (!ResourceLoader.Exists(path)) continue;
+            var im = ResourceLoader.Load<Texture2D>(path)?.GetImage();
+            if (im == null) continue;
+            im.Convert(Image.Format.Rgba8);
+            stones.Add(im);
+        }
+
+        if (stones.Count == 0)
+        {
+            DrawProceduralSteles(img, w, horizon);
+            return;
+        }
+
+        // 原生尺寸铺，不缩放——缩放要重采样，这 28×52 的小图不值得引入那点误差。
+        // 每三块留一块当"远处"，压暗并拉开间距，做出纵深。
+        int cursor = -12, idx = 0;
+        while (cursor < w)
+        {
+            var st = stones[idx % stones.Count];
+            bool far = idx % 3 == 0;
+            int sw = st.GetWidth(), sh = st.GetHeight();
+            int baseY = horizon - sh - (far ? 5 : 0);
+            float k = far ? 0.72f : 1f;
+
+            // 落地阴影：没有它碑会浮在地平线上，看起来像贴图而不是站在土里
+            for (int px = 0; px < sw; px++)
+            {
+                int tx = cursor + px;
+                if (tx < 0 || tx >= w) continue;
+                var below = st.GetPixel(px, sh - 1);
+                if (below.A < 0.5f) continue;      // 只在碑正下方才有影
+                float spread = far ? 0.82f : 0.92f;
+                img.SetPixel(tx, baseY + sh, new Color(0.24f, 0.23f, 0.18f, 1f));
+                if ((px * 100 / sw) % 100 < spread * 100)
+                    img.SetPixel(tx, baseY + sh + (far ? 0 : 1), new Color(0.30f, 0.29f, 0.23f, 1f));
+            }
+
+            for (int py = 0; py < sh; py++)
+            {
+                int ty = baseY + py;
+                if (ty < 0 || ty >= img.GetHeight()) continue;
+                for (int px = 0; px < sw; px++)
+                {
+                    int tx = cursor + px;
+                    if (tx < 0 || tx >= w) continue;
+                    var c = st.GetPixel(px, py);
+                    if (c.A < 0.5f) continue;
+                    img.SetPixel(tx, ty, new Color(c.R * k, c.G * k, c.B * k, 1f));
+                }
+            }
+
+            cursor += far ? sw + 22 : sw + 6;
+            idx++;
+        }
+    }
+
+    /// <summary>抠像素材缺失时的兜底：两排程序剪影，后排矮而淡、前排高而实。</summary>
+    private static void DrawProceduralSteles(Image img, int w, int horizon)
+    {
+        var rng = new Random(20060517);
+        var stone = Rgb(106, 106, 104);
+        for (int pass = 0; pass < 2; pass++)
+        {
+            int y = horizon - (pass == 0 ? 4 : 0);
+            int thMin = pass == 0 ? 20 : 30;
+            int thMax = pass == 0 ? 34 : 54;
+            float k = pass == 0 ? 0.62f : 1f;
+            for (int i = 0; i < (pass == 0 ? 26 : 18); i++)
+            {
+                int tx = rng.Next(-8, w);
+                int tw = rng.Next(8, 18);
+                int th = rng.Next(thMin, thMax);
+                for (int py = y - th; py < y; py++)
+                for (int px = tx; px < tx + tw && px < w; px++)
+                {
+                    if (px < 0 || py < 0 || py >= img.GetHeight()) continue;
+                    // 顶端收窄，让它像个碑而不是块砖
+                    float t = (float)(y - py) / th;
+                    float half = tw * 0.5f * (1f - 0.35f * t * t);
+                    if (Math.Abs(px - (tx + tw * 0.5f)) > half) continue;
+                    img.SetPixel(px, py, new Color(stone.R * k, stone.G * k, stone.B * k, 1f));
+                }
+            }
+        }
     }
 
     /// <summary>纯黑。</summary>

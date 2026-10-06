@@ -21,11 +21,25 @@ public static class SteleBuilder
     public const int W = 640;
     public const int H = 360;
 
-    /// <summary>正文刻的内容。注意「十六」——这是被磨改之后的日期。</summary>
-    public const string FaceText = "韩梅，女，一九八五年生，二〇二一年五月十六日卒。";
+    // ★ 碑面内容以 doc/剧本.md（S6/S7/S9）为准，不是 doc/剧情.md。
+    //   2026 版剧本里**名字没被改过**——碑上刻的就是真名苏兰。
+    //   苏航只改了日期：把「17」磨掉，改刻成「16」。
 
-    /// <summary>原始委托单上的内容。底下磨出来的是这个。</summary>
-    public const string OriginalText = "韩湘，女，一九八五年生，二〇二一年五月十七日卒。";
+    /// <summary>姓名（第一行，字最大）。</summary>
+    public const string FaceName = "苏兰";
+
+    /// <summary>生年（第二行）。</summary>
+    public const string FaceBorn = "一九五八年生";
+
+    /// <summary>卒日期（第三行）。★ 这里是「16」——被磨改之后的那个。</summary>
+    public const string FaceDate = "2006.05.16";
+
+    /// <summary>底座垫石上刻着的那两行（终章扒出来的那一面，真话）。</summary>
+    public const string UnderDate = "材料日期 2006-05-17 / 刻字日期 2006-05-17";
+
+    /// <summary>登记本 / 墓园系统的内容。真话。</summary>
+    public const string RegistryName = "苏兰";
+    public const string RegistryDate = "2006-05-17";
 
     /// <summary>名字所占的横向范围（比例）。</summary>
     private const float NameStartFrac = 0.06f;
@@ -97,9 +111,7 @@ public static class SteleBuilder
             sm = new SurfaceModel(W, H);
         }
 
-        MarkRepairBar(sm, layout);          // 「每」下面那一横 → Repair
-        MarkSevenUnderSix(sm, layout);        // 「六」底下那个「七」→ 磨痕
-        MarkXiangRemnant(sm, layout);         // 「湘」的残迹 → 只留碎笔
+        // ★ 批次划分在 BuildMarks 里做（它同时要知道判定区），这里不再重复处理
         FillDust(sm, layout);
 
         BuildMarks(sm, layout);
@@ -107,11 +119,11 @@ public static class SteleBuilder
         return sm;
     }
 
-    public const int LineName = 0, LineWho = 1, LineDate = 2;
+    public const int LineName = 0, LineBorn = 1, LineDate = 2;
 
     /// <summary>
-    /// 需要烘进遮罩的全部字槽（含不在正常行里的「七」和「湘」）。
-    /// 烘焙工具和游戏本体共用这一份，所以两边画出来的一定一致。
+    /// 需要烘进遮罩的全部字槽。
+    /// ★ 和美术需求无关：判定数据全部在这里算出来，美术的图只负责好看。
     /// </summary>
     public static List<GlyphBaker.Slot> BakeSlots(Layout l)
     {
@@ -122,13 +134,10 @@ public static class SteleBuilder
             slots.Add(new GlyphBaker.Slot(s.Ch, s.Box, Batch.Luyun, depth));
         }
 
-        // ★「六」底下那个「七」。
-        //   「六」是苏航磨掉「七」之后重新刻上去的，所以：
-        //     · 「六」在正位、是老吴那一批的假痕迹（Batch.Luyun，但玩家不知道）
-        //     · 「七」在正位**偏下 6px**，Batch.Ground，深度更浅 —— 它从「六」底下露出下半截
-        //   露出来的那一截就是玩家要擦开石粉后描出来的东西。
+        // ★ 「6」底下那个「7」——被磨掉又重刻的第一处痕迹。
         //   完全重合是不行的：那样玩家什么都看不见，这一关就变成猜谜了。
-        var liu = l.Find('六', LineDate);
+        //   所以「7」正位偏下 6px，从「6」底下露出下半截。
+        var liu = l.Find('6', LineDate);
         if (liu.Size.X > 0)
         {
             var sevenBox = new Rect2(
@@ -136,9 +145,7 @@ public static class SteleBuilder
                 liu.Position.Y + liu.Size.Y * 0.30f,
                 liu.Size.X * 0.78f,
                 liu.Size.Y * 0.86f);
-            slots.Add(new GlyphBaker.Slot('七', sevenBox, Batch.Ground, 120));
-
-            // 判定区只取「七」露出来的那半截（下半部分）
+            slots.Add(new GlyphBaker.Slot('7', sevenBox, Batch.Ground, 120));
             LastSevenMark = new Rect2(
                 sevenBox.Position.X,
                 sevenBox.Position.Y + sevenBox.Size.Y * 0.42f,
@@ -146,42 +153,15 @@ public static class SteleBuilder
                 sevenBox.Size.Y * 0.58f);
         }
 
-        // 名字底下「湘」的残迹
-        var mei = l.Find('梅', LineName);
-        if (mei.Size.X > 0)
-            slots.Add(new GlyphBaker.Slot('湘', new Rect2(
-                mei.Position.X, mei.Position.Y + mei.Size.Y + 2,
-                mei.Size.X, 30), Batch.Ground, 80));
-
         return slots;
     }
 
-    /// <summary>批次 ID 图（R 通道）。程序推导，美术不用做。</summary>
-    public static Image BuildBatchMap()
-    {
-        var sm = LoadBaked();
-        var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
-        if (sm != null)
-            for (int i = 0; i < sm.BatchMap.Length; i++)
-                img.SetPixel(i % W, i / W, new Color(sm.BatchMap[i] / 255f, 0, 0, 1));
-        else
-            img.Fill(new Color(0, 0, 0, 1));
-        return img;
-    }
+    /// <summary>「7」露出在外面的那一截（判定区）。</summary>
+    public static Rect2 LastSevenMark { get; private set; }
 
     /// <summary>已烘好的遮罩路径。存在就直接读，不做运行时烘焙。</summary>
     public const string BakedPath = "res://data/gen/stele_glyphs.png";
 
-    /// <summary>「七」露出在外面的那一截（判定区）。</summary>
-    public static Rect2 LastSevenMark { get; private set; }
-
-    /// <summary>只要布局不要表面（烘焙工具用）。</summary>
-    public static Layout BuildLayoutOnly()
-    {
-        var font = LoadThemeFont();
-        LastLayout = ComputeLayout(font);
-        return LastLayout;
-    }
 
     private static Font? LoadThemeFont()
     {
@@ -190,45 +170,6 @@ public static class SteleBuilder
             return ResourceLoader.Load<Font>(p);
         return ThemeDB.FallbackFont;
     }
-
-    private static Layout ComputeLayout(Font font)
-    {
-        // 三行，这是真碑的排法，也让"日期行"单独成行（段三的字距线索在那行上）
-        //   行一：韩梅，              （大）
-        //   行二：女，一九八五年生     （小）
-        //   行三：二〇二一年五月十六日卒。（小）
-        var l = new Layout();
-
-        const int NAME = 96, SMALL = 34;
-        const int NAME_X = 44, LINE_X = 44;
-
-        l.NameTop = 46;
-        l.Slots.Add(new Layout.GlyphSlot('韩', new Rect2(NAME_X, l.NameTop, NAME, NAME), LineName, 0));
-        l.Slots.Add(new Layout.GlyphSlot('梅', new Rect2(NAME_X + NAME + 8, l.NameTop, NAME, NAME), LineName, 1));
-        int commaX = NAME_X + (NAME + 8) * 2 + 6;
-
-        void LayLine(string text, int line, int top, int size, int gap)
-        {
-            int x = LINE_X, idx = 0;
-            foreach (char c in text)
-            {
-                if (c is '，' or '。') { x += size + 10; continue; }
-                // ★ 「十」往左挪 2px —— 段三"不用擦就能看见"的那一级台阶
-                if (line == LineDate && c == '十') x -= Layout.ShouNudge;
-                l.Slots.Add(new Layout.GlyphSlot(c, new Rect2(x, top, size, size), line, idx++));
-                x += size + gap;
-            }
-        }
-
-        l.BodyTop = 188;
-        LayLine("女，一九八五年生", LineWho, l.BodyTop, SMALL, 8);
-        l.DateTop = 250;
-        LayLine("二〇二一年五月十六日卒。", LineDate, l.DateTop, SMALL, 6);
-
-        return l;
-    }
-
-    // ── 光栅化 ──────────────────────────────────────────────────────────
 
     /// <summary>
     /// 用 TextServer 把一个字渲染成位图。
@@ -247,6 +188,19 @@ public static class SteleBuilder
     ///   必须先调 TextServer.FontRenderRange 把目标字号烘进缓存，之后下标 1..N 才可用。
     ///   这里把找到的下标缓存起来。
     /// </summary>
+    /// <summary>批次 ID 图（R 通道）。程序推导，美术不用做。</summary>
+    public static Image BuildBatchMap()
+    {
+        var sm = LoadBaked();
+        var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
+        if (sm != null)
+            for (int i = 0; i < sm.BatchMap.Length; i++)
+                img.SetPixel(i % W, i / W, new Color(sm.BatchMap[i] / 255f, 0, 0, 1));
+        else
+            img.Fill(new Color(0, 0, 0, 1));
+        return img;
+    }
+
     private static int EnsureCacheIndex(FontFile ff, int pxSize)
     {
         if (_cacheIndexForSize.TryGetValue(pxSize, out int cached))
@@ -329,6 +283,49 @@ public static class SteleBuilder
         return outImg;
     }
 
+    /// <summary>只要布局不要表面（烘焙工具用）。</summary>
+    public static Layout BuildLayoutOnly()
+    {
+        LastLayout = ComputeLayout(LoadThemeFont());
+        return LastLayout;
+    }
+
+    private static Layout ComputeLayout(Font font)
+    {
+        // 三行：姓名（大）· 生年 · 卒日期
+        // 姓名那一行最大，因为第一章要找的就是「兰」的最后一笔。
+        var l = new Layout();
+
+        const int NAME = 104, SMALL = 30;
+        const int X = 52;
+
+        l.NameTop = 40;
+        foreach (var (ch, i) in FaceName.Select((c, i) => (c, i)))
+            l.Slots.Add(new Layout.GlyphSlot(ch,
+                new Rect2(X + i * (NAME + 10), l.NameTop, NAME, NAME), LineName, i));
+
+        l.BodyTop = 200;
+        int x = X;
+        foreach (char c in FaceBorn)
+        {
+            l.Slots.Add(new Layout.GlyphSlot(c, new Rect2(x, l.BodyTop, SMALL, SMALL), LineBorn, 0));
+            x += SMALL + 8;
+        }
+
+        // 日期行：数字和点各占固定格，这样「6」的位置是确定的，判定区不会飘
+        l.DateTop = 262;
+        x = X;
+        int idx = 0;
+        foreach (char c in FaceDate)
+        {
+            int w = c is '.' ? 12 : SMALL;
+            l.Slots.Add(new Layout.GlyphSlot(c, new Rect2(x, l.DateTop, w, SMALL), LineDate, idx++));
+            x += w + 8;
+        }
+
+        return l;
+    }
+
     /// <summary>
     /// 读已烘好的遮罩（<c>data/gen/stele_glyphs.png</c>，R=Height，G=Batch）。
     /// ★ 这张图是**程序生成的**，不是美术资产，所以它不受"美术交不交图"的影响。
@@ -366,55 +363,12 @@ public static class SteleBuilder
     // 也就是玩法真正的判据。全部从几何推出来，不看美术图。
 
     /// <summary>「每」的最下面那一长横 = 补刻（Batch.Repair）。全篇要找的那一笔。</summary>
-    private static void MarkRepairBar(SurfaceModel sm, Layout l)
+    /// <summary>把某个字最下面那一长横标成"补刻"（Batch.Repair）。</summary>
+    private static void MarkRepairBar(SurfaceModel sm, Rect2 box)
     {
-        var mei = l.Find('梅', LineName);
-        if (mei.Size.X <= 0) return;
-
-        var bar = FindBottomHorizontal(sm, mei, 0.66f, 1.0f);
+        if (box.Size.X <= 0) return;
+        var bar = FindBottomHorizontal(sm, box, 0.68f, 1.0f);
         SetBatchIn(sm, bar, Batch.Repair, 240);
-    }
-
-    /// <summary>「六」底下那个被磨出来的「七」= 磨除（Batch.Ground），而且更浅。</summary>
-    private static void MarkSevenUnderSix(SurfaceModel sm, Layout l)
-    {
-        var liu = l.Find('六', LineDate);
-        if (liu.Size.X <= 0) return;
-
-        var seven = new Rect2(liu.Position.X + liu.Size.X * 0.14f,
-                              liu.Position.Y + liu.Size.Y * 0.34f,
-                              liu.Size.X * 0.70f,
-                              liu.Size.Y * 0.58f);
-
-        // 「七」的像素在烘焙阶段就写进来了（见 BakeSlots），这里只把磨痕调浅
-        ForEachIn(sm, seven, (x, y, i) =>
-        {
-            if (sm.Height[i] > 0 && sm.BatchMap[i] == (byte)Batch.Ground)
-                sm.Height[i] = (byte)(sm.Height[i] * 0.72f);
-        });
-    }
-
-    /// <summary>名字底下那块「湘」的残迹。只留断续的碎笔，认不出是什么。</summary>
-    private static void MarkXiangRemnant(SurfaceModel sm, Layout l)
-    {
-        var mei = l.Find('梅', LineName);
-        if (mei.Size.X <= 0) return;
-
-        var area = new Rect2(mei.Position.X, mei.Position.Y + mei.Size.Y + 2, mei.Size.X, 30);
-
-        // 磨掉七成：留下断续的碎笔（像素在烘焙阶段就写进来了）
-        var drop = new List<int>();
-        ForEachIn(sm, area, (x, y, i) =>
-        {
-            if (sm.BatchMap[i] != (byte)Batch.Ground) return;
-            if (ProcGen.FractalAccessor(x, y, 16, 211, 2) < 0.58f)
-                drop.Add(i);
-        });
-        foreach (int i in drop)
-        {
-            sm.Height[i] = 0;
-            sm.BatchMap[i] = 0;
-        }
     }
 
     private static void SetBatchIn(SurfaceModel sm, Rect2 box, Batch batch, int depth)
@@ -493,93 +447,46 @@ public static class SteleBuilder
 
     // ── 判定笔画 ────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// 判定笔画。2026 版剧本里**名字没有被改过**——碑上刻的就是真名苏兰，
+    /// 苏航只磨改了日期。所以只剩两处痕迹，不是四处。
+    /// </summary>
     private static void BuildMarks(SurfaceModel sm, Layout l)
     {
-        var mei = l.Find('梅', LineName);
-
-        // ① 「每」的最下面那一横（补刻）—— 第一章段一
-        var bar = FindBottomHorizontal(sm, mei, 0.62f, 0.99f);
-        sm.Marks.Add(new CarveMark
+        // ① 「兰」的最下面那一长横 —— 被磨掉又重刻，Batch = Repair
+        var lan = l.Find('兰', LineName);
+        if (lan.Size.X > 0)
         {
-            Id = "mei_bottom_bar",
-            Bounds = bar,
-            Tolerance = 6f,
-            Start = new Vector2(bar.Position.X + 2, bar.GetCenter().Y),
-            TotalPixels = AreaOf(bar),
-        });
+            MarkRepairBar(sm, lan);                      // 先标批次
+            var bar = FindBottomHorizontal(sm, lan, 0.68f, 1.0f);
+            sm.Marks.Add(new CarveMark
+            {
+                Id = "lan_last_stroke",
+                Bounds = bar,
+                Tolerance = 6f,
+                Start = new Vector2(bar.Position.X + 2, bar.GetCenter().Y),
+                TotalPixels = AreaOf(bar),
+            });
+        }
 
-        // ② 木字旁那一竖 —— 第一章段二（笔法跟「韩」一致）
-        var vertical = FindLeftRadicalVertical(sm, mei);
-        sm.Marks.Add(new CarveMark
-        {
-            Id = "mei_wood_vertical",
-            Bounds = vertical,
-            Tolerance = 5f,
-            Start = new Vector2(vertical.GetCenter().X, vertical.Position.Y + 2),
-            TotalPixels = AreaOf(vertical),
-        });
-
-        // ③ 「六」底下那个「七」—— 第一章段三（要先擦开）
-        var liu = l.Find('六', LineDate);
+        // ② 「6」底下那个「7」——玩家擦开石粉后描出来
+        var liu = l.Find('6', LineDate);
         if (liu.Size.X > 0)
         {
             var seven = LastSevenMark.Size.X > 0 ? LastSevenMark : liu;
             sm.Marks.Add(new CarveMark
             {
-                Id = "six_under_seven",
+                Id = "sixteen_under_seventeen",
                 Bounds = seven,
                 Tolerance = 5f,
                 Start = new Vector2(seven.GetCenter().X, seven.Position.Y + 2),
                 TotalPixels = AreaOf(seven),
             });
         }
-
-        // ④ 被磨掉的「湘」—— 确认"名字也被换过"
-        if (mei.Size.X > 0)
-        {
-            var xiang = new Rect2(mei.Position.X, mei.Position.Y + mei.Size.Y + 2,
-                                  mei.Size.X, 30);
-            sm.Marks.Add(new CarveMark
-            {
-                Id = "ground_off_xiang",
-                Bounds = xiang,
-                Tolerance = 6f,
-                Start = new Vector2(xiang.Position.X + 4, xiang.GetCenter().Y),
-                TotalPixels = AreaOf(xiang),
-            });
-        }
     }
 
     private static int AreaOf(Rect2 r) =>
         Math.Max(1, Mathf.RoundToInt(r.Size.X) * Mathf.RoundToInt(r.Size.Y));
-
-    /// <summary>找「梅」左半边（木字旁）最长的竖。用来做段二的判定区。</summary>
-    private static Rect2 FindLeftRadicalVertical(SurfaceModel sm, Rect2 box)
-    {
-        int x0 = Mathf.RoundToInt(box.Position.X);
-        int x1 = Mathf.RoundToInt(box.Position.X + box.Size.X * 0.42f);   // 只看左 42%
-        int y0 = Mathf.RoundToInt(box.Position.Y);
-        int y1 = Mathf.RoundToInt(box.End.Y);
-
-        int bestX = -1, bestLen = 0;
-        for (int x = x0; x < x1 && x < W; x++)
-        {
-            int run = 0, maxRun = 0;
-            for (int y = y0; y < y1 && y < H; y++)
-            {
-                bool on = sm.Height[sm.Index(x, y)] > 40;
-                if (on) { run++; if (run > maxRun) maxRun = run; }
-                else run = 0;
-            }
-            if (maxRun > bestLen) { bestLen = maxRun; bestX = x; }
-        }
-
-        if (bestX < 0 || bestLen < 8)
-            return new Rect2(box.Position.X + box.Size.X * 0.16f, box.Position.Y + box.Size.Y * 0.25f,
-                             8, box.Size.Y * 0.45f);
-
-        return new Rect2(bestX - 4, y0, 9, Mathf.Min(bestLen, y1 - y0));
-    }
 
     // ── 清碑（BE5 的入口，不可逆）──────────────────────────────────────
 
