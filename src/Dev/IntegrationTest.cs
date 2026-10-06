@@ -215,8 +215,9 @@ public partial class IntegrationTest : Node
 
         scene.Test_WipeDate();
         var hud = MenuHud.Instance;
-        Check(hud != null && hud.Visible && hud.TestBackVisible && hud.TestChapterText.Contains("第一章"),
-              $"HUD 章节角标就位（「{hud?.TestChapterText}」+返回按钮）");   // Citrate#5/#6
+        for (int f = 0; f < 4; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);   // 等延迟挂树
+        Check(hud != null && hud.Visible && hud.IsInsideTree() && hud.TestBackVisible && hud.TestChapterText.Contains("第一章"),
+              $"HUD 就位且已挂树（「{hud?.TestChapterText}」+返回按钮）");   // Citrate#5/#6/#23
         Check(scene.TestPhase == ChapterOne.Phase.Choice, "擦净日期区 → 解锁 Choice");
 
         // Natsume 回归：进-出-进，进度只增不减

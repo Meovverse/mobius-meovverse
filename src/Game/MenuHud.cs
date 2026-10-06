@@ -23,8 +23,10 @@ public partial class MenuHud : CanvasLayer
         if (_inst == null || !GodotObject.IsInstanceValid(_inst))
         {
             _inst = new MenuHud { Layer = 90 };
-            tree.Root.AddChild(_inst);
             _inst.Build();
+            // 场景 _Ready 期间 Root 正在装配子节点，直接 AddChild 会失败且静默——
+            // 节点成孤儿、HUD 永不显示（Citrate#23）。必须延迟到本帧之后挂树。
+            tree.Root.CallDeferred(Node.MethodName.AddChild, _inst);
         }
         _inst.Visible = show;
         if (show && chapter != null) _inst._chap.Text = chapter;
@@ -35,7 +37,7 @@ public partial class MenuHud : CanvasLayer
     {
         _chap = new Label
         {
-            Position = new Vector2(2, 4), Size = new Vector2(636, 18),
+            Position = new Vector2(2, 28), Size = new Vector2(636, 18),
             HorizontalAlignment = HorizontalAlignment.Right,
             Modulate = new Color(1, 1, 1, 0.7f),
         };

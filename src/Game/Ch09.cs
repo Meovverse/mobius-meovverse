@@ -9,6 +9,8 @@ public partial class Ch09 : StorySceneBase
 {
     private readonly List<(Label node, string when)> _order = new();
     private int _next;
+    private Label _hint2;
+
 
     private static readonly (string when, string what)[] Items =
     {
@@ -27,21 +29,37 @@ public partial class Ch09 : StorySceneBase
             new(380, 200, 150, 34), new(90, 90, 150, 34), new(300, 60, 170, 34),
             new(120, 220, 160, 34), new(420, 110, 150, 34), new(180, 150, 150, 34),
         };
+        // #22：原来每张纸写"？"，玩家看不到内容就无从判断先后——必然卡住。
+        // 现在纸上直接写"发生了什么"（内容本身是线索），玩家据此推理时间顺序。
         for (int i = 0; i < Items.Length; i++)
         {
             int idx = i;
-            var lb = new Label { Text = "？", Position = new Vector2(scatter[i].Position.X, scatter[i].Position.Y),
-                                 Size = new Vector2(scatter[i].Size.X, 30), MouseFilter = Control.MouseFilterEnum.Stop };
+            var lb = new Label { Text = Items[i].what, Position = new Vector2(scatter[i].Position.X, scatter[i].Position.Y),
+                                 Size = new Vector2(scatter[i].Size.X, 30), MouseFilter = Control.MouseFilterEnum.Stop,
+                                 AutowrapMode = TextServer.AutowrapMode.WordSmart };
+            lb.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
             Ui.AddChild(lb);
             lb.GuiInput += e => { if (e is InputEventMouseButton mb && mb.Pressed) Try(idx, lb); };
             _order.Add((lb, Items[idx].when));
         }
-        Subs(null, "九样东西摊满桌面。他要在纸上重排一遍时间。", "（按时间顺序，把纸片一张张点到右边的横线上。）");
+        _hint2 = new Label { Position = new Vector2(16, 30), Size = new Vector2(608, 18),
+                             Modulate = new Color(1, 1, 0.9f, 0.85f) };
+        _hint2.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+        Ui.AddChild(_hint2);
+        Subs(null,
+            "九样东西摊在桌上。把它们按**事情发生的先后**，依次点出来。",
+            "点对了，它自己会标上序号；点错了只轻轻一响——再想想哪件最早发生。");
     }
 
     private void Try(int idx, Label lb)
     {
-        if (idx != _next) { AudioIndex.Sfx("sfx_caliper_lock"); return; }   // 不对：一声轻响，不给解释
+        if (idx != _next)
+        {
+            AudioIndex.Sfx("sfx_caliper_lock");   // 不对：一声轻响
+            _hint2.Text = $"还没轮到它（已排 {_next}/6）。先想想哪件事最早发生。";
+            return;
+        }
+        _hint2.Text = "";
         lb.Text = _next + 1 + ". " + Items[idx].when + " · " + Items[idx].what;
         lb.Modulate = new Color(1f, 0.98f, 0.9f);
         Sfx("sfx_paper_place");

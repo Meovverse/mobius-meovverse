@@ -156,8 +156,9 @@ public static class AudioIndex
     {
         if (_host != null && GodotObject.IsInstanceValid(_host)) return _host;
         _host = new Node { Name = "Audio" };
-        // Boot._Ready 期间 Root 正在装配子节点，直接 AddChild 会炸；挂树必须推迟到本帧之后
-        ((SceneTree)Engine.GetMainLoop()).Root.AddChild(_host);   // 见 Boot：调用方须已出 _Ready（那里用 CallDeferred 调 PlayTitle）
+        // ★ 任何场景 _Ready 期间 Root 都在装配子节点，直接 AddChild 会失败且静默
+        //   （音频从此变孤儿、整局静音）。一律延迟挂树。
+        ((SceneTree)Engine.GetMainLoop()).Root.CallDeferred(Node.MethodName.AddChild, _host);
 
         for (int i = 0; i < 8; i++)
         {
@@ -196,7 +197,9 @@ public static class AudioIndex
     public static void Sfx(string id)
     {
         var cue = Find(id); if (cue == null) return;
-        Host();   // ★ 集成测试抓出的真 bug：Sfx 从不 Init 池——先描后擦的纯键鼠路径 IndexOutOfRange
+        Host();
+        if (!_host.IsInsideTree()) { Callable.From(() => Sfx(id)).CallDeferred(); return; }
+        // ★ 集成测试抓出的真 bug：Sfx 从不 Init 池——先描后擦的纯键鼠路径 IndexOutOfRange
         var stream = Load(cue.File); if (stream == null) return;
         AudioStreamPlayer free = null;
         foreach (var p in Pool) if (!p.Playing) { free = p; break; }
@@ -210,6 +213,8 @@ public static class AudioIndex
     /// <summary>按住型循环（loop_*）：程序开环，见类注释的死规矩。</summary>
     public static void StartHold(string id)
     {
+        Host();
+        if (!_host.IsInsideTree()) { Callable.From(() => StartHold(id)).CallDeferred(); return; }
         var cue = Find(id); if (cue == null) return;
         var stream = Load(cue.File); if (stream == null) return;
         Host();
@@ -232,6 +237,7 @@ public static class AudioIndex
     {
         var cue = Find(id); if (cue == null || id == CurrentAmb()) return;
         Host();
+        if (!_host.IsInsideTree()) { Callable.From(() => Ambience(id)).CallDeferred(); return; }
         int next = (_ambCur + 1) % 2;
         var stream = Load(cue.File); if (stream == null) return;
         var (inP, outP) = (AmbPlayers[next], AmbPlayers[_ambCur >= 0 ? _ambCur : next]);
@@ -264,6 +270,7 @@ public static class AudioIndex
     public static void PlayTitle()
     {
         Host();
+        if (_host != null && !_host.IsInsideTree()) { Callable.From(PlayTitle).CallDeferred(); return; }
         if (_music == null)
         {
             _music = new AudioStreamPlayer { Bus = BusName(Bus.Music) };
