@@ -13,7 +13,7 @@ public partial class Ch02 : StorySceneBase
         HoldStart("amb_office_night");
         Clue(RunState.Flag.Clue02, "墓园系统：苏兰／材料 05-17／刻字 05-17／经办 老吴。");
 
-        var screen = new Panel { Position = new Vector2(180, 60), Size = new Vector2(300, 180), Visible = false };
+        var screen = new Panel { Position = new Vector2(180, 60), Size = new Vector2(300, 180), Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
         screen.AddChild(new Label { Position = new Vector2(18, 14),
             Text = "> A区7号\n\n姓名：苏兰\n材料日期：2006-05-17\n刻字日期：2006-05-17\n经办人：老吴" });
         Ui.AddChild(screen);

@@ -108,11 +108,11 @@ public partial class StorySceneBase : Node2D
     /// <summary>一行一条 (谁, 话)。who: "wu"/"su"/""=旁白。</summary>
     protected void Dialogue((string who, string line)[] lines, Action done)
     {
-        var panel = new Panel { Visible = false, Position = new Vector2(24, 236), Size = new Vector2(592, 108) };
+        var panel = new Panel { Visible = false, Position = new Vector2(24, 236), Size = new Vector2(592, 108), MouseFilter = Control.MouseFilterEnum.Ignore };
         var face = new TextureRect { Position = new Vector2(8, 8), Size = new Vector2(84, 92),
-                                     StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered };
+                                     StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore };
         var txt = new RichTextLabel { Position = new Vector2(100, 10), Size = new Vector2(480, 88),
-                                      BbcodeEnabled = true, Text = "" };
+                                      BbcodeEnabled = true, Text = "", MouseFilter = Control.MouseFilterEnum.Ignore };
         panel.AddChild(face); panel.AddChild(txt);
         Ui.AddChild(panel);
 

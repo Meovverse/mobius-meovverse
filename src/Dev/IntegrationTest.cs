@@ -27,6 +27,7 @@ public partial class IntegrationTest : Node
         GD.Print("════════ 集成测试 ════════");
         TestAssetsAndAudio();
         TestFlowRouting();
+        TestTitleClick();
         await TestChapterOneFlow();
         await SmokeChapters();
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
@@ -60,6 +61,17 @@ public partial class IntegrationTest : Node
             Check(GodotObject.IsInstanceValid(inst), $"烟测：{scn.GetFile()}");
             inst.QueueFree();
         }
+    }
+
+    void TestTitleClick()
+    {
+        // 真人反馈"单击无反应"回归：合成一次左键，Boot 必须进转场
+        var boot = GD.Load<PackedScene>("res://scenes/Boot.tscn").Instantiate<Boot>();
+        AddChild(boot);
+        var mb = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = new Vector2(300, 200) };
+        boot._UnhandledInput(mb);
+        Check(boot.TestLeaving, "标题：单击左键触发转场（MouseFilter 回归）");
+        boot.QueueFree();
     }
 
     void TestFlowRouting()

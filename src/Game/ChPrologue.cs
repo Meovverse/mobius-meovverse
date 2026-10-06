@@ -24,7 +24,7 @@ public partial class ChPrologue : StorySceneBase
 
     private void ShowLedger()
     {
-        var card = new Panel { Position = new Vector2(150, 40), Size = new Vector2(340, 240) };
+        var card = new Panel { Position = new Vector2(150, 40), Size = new Vector2(340, 240), MouseFilter = Control.MouseFilterEnum.Ignore };
         card.AddChild(new Label
         {
             Position = new Vector2(28, 26),

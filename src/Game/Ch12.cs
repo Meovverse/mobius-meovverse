@@ -54,7 +54,7 @@ public partial class Ch12 : StorySceneBase
     {
         HoldStop();
         Sfx("sfx_base_crack");
-        var card = new Panel { Position = new Vector2(150, 80), Size = new Vector2(340, 150) };
+        var card = new Panel { Position = new Vector2(150, 80), Size = new Vector2(340, 150), MouseFilter = Control.MouseFilterEnum.Ignore };
         card.AddChild(new Label { Position = new Vector2(20, 14), Text =
             "—— 底座下的原始石面 ——\n材料日期：2006 年 5 月 17 日\n刻字日期：2006 年 5 月 17 日\n（上面那块新碑：05 月 16 日）" });
         Ui.AddChild(card);

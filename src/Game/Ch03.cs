@@ -10,7 +10,7 @@ public partial class Ch03 : StorySceneBase
     protected override void SceneReady()
     {
         Plate("bg_shop_front");
-        var table = new Panel { Position = new Vector2(60, 30), Size = new Vector2(520, 210) };
+        var table = new Panel { Position = new Vector2(60, 30), Size = new Vector2(520, 210), MouseFilter = Control.MouseFilterEnum.Ignore };
         table.AddChild(new Label { Position = new Vector2(20, 12), Text =
             "来源              日期\n" +
             "墓碑              2006-05-16\n" +

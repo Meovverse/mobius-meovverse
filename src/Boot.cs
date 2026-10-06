@@ -18,13 +18,25 @@ public partial class Boot : Control
     public const int ViewportHeight = 360;
 
     private ColorRect _white;
+
+    public override void _Process(double delta)
+    {
+        if (_shotWait > 0 && --_shotWait == 0)
+        {
+            GetViewport().GetTexture().GetImage().SavePng("res://data/gen/title_shot.png");
+            GD.Print("[title] shot 已存");
+            GetTree().Quit();
+        }
+    }
     private bool _leaving;
+    public bool TestLeaving => _leaving;
 
     // 真人测试期保留 F3；点击 = 开始游戏
     public override void _UnhandledInput(InputEvent e)
     {
         if (_leaving) return;
-        if (e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+        if ((e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+            || e.IsActionPressed("ui_accept"))
             Leave();
     }
 
@@ -52,58 +64,29 @@ public partial class Boot : Control
             GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next())));
     }
 
+    private int _shotWait;
+
     public override void _Ready()
     {
-        var bg0 = new ColorRect { Color = new Color(0f, 0f, 0f) };
+        // ★ 从 RPGExplo（960×540 视口）回来时把游戏视口复位，否则标题比例全歪
+        GetWindow().ContentScaleSize = new Vector2I(ViewportWidth, ViewportHeight);
+        GetWindow().Size = new Vector2I(ViewportWidth * 2, ViewportHeight * 2);
+
+        var bg0 = new ColorRect { Color = new Color(0f, 0f, 0f), MouseFilter = MouseFilterEnum.Ignore };
         bg0.SetAnchorsPreset(LayoutPreset.FullRect);
         AddChild(bg0);
-        // 四批：正式标题画面（1280×720，覆盖到全屏）
+        // 标题画面：1280×720 用 Sprite2D 精确半倍铺满 640×360 视口。
+        //   不用 TextureRect：锚点预置在入树前 size 是 0，只露左上角（"显示不全"的根因）。
+        //   背景一律 MouseFilter=Ignore——Control 默认 Stop 会吞点击（"单击无反应"的根因）。
         var titleTex = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
         if (titleTex != null)
-        {
-            var tr = new TextureRect { Texture = titleTex, StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered };
-            tr.SetAnchorsPreset(LayoutPreset.FullRect);
-            AddChild(tr);
-        }
-        // 白闪层：转场最后一棒
-        _white = new ColorRect { Color = new Color(1, 1, 1, 0) };
+            AddChild(new Sprite2D { Texture = titleTex, Centered = false, Scale = new Vector2(0.5f, 0.5f) });
+        _white = new ColorRect { Color = new Color(1, 1, 1, 0), MouseFilter = MouseFilterEnum.Ignore };
         _white.SetAnchorsPreset(LayoutPreset.FullRect);
         AddChild(_white);
 
-        var text = new Label
-        {
-            Position = new Vector2(24, 24),
-            Size = new Vector2(400, 24),
-            Text = "墓时",
-        };
-        AddChild(text);
-
-        var info = new Label
-        {
-            Position = new Vector2(24, 54),
-            Size = new Vector2(400, 24),
-            Text = $"{ViewportWidth}×{ViewportHeight} · gl_compatibility · C#",
-        };
-        AddChild(info);
-
-        var hint = new Label
-        {
-            Position = new Vector2(24, 114),
-            Size = new Vector2(592, 24),
-        };
-        AddChild(hint);
-
-        var fontStatus = new Label
-        {
-            Position = new Vector2(24, 84),
-            Size = new Vector2(592, 24),
-        };
-        AddChild(fontStatus);
-
         var path = ProjectSettings.GetSetting("gui/theme/custom_font").AsString();
-        fontStatus.Text = ResourceLoader.Exists(path)
-            ? $"字体已加载：{path.GetFile()}"
-            : "字体未加载 —— 请把 fusion_pixel_12px.ttf 放到 assets/fonts/";
+
 
         // ★ 槽位登记表：美术要做的只剩 6 张，其余全部程序生成。
         //   这是 doc/美术需求.md 的机器可读版本，两边不一致时以代码为准。
@@ -124,6 +107,11 @@ public partial class Boot : Control
 
         // 标题曲——全篇唯一允许响音乐的地方。延后一拍：Audio 宿主节点自己也是 call_deferred 挂的树
         Callable.From(Core.AudioIndex.PlayTitle).CallDeferred();
-        hint.Text = "点击画面开始 ｜ F3 = 资产对账";
+
+        // 验收截图钩子：-- shot 存标题画面后退出
+        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0)
+            _shotWait = 20;
+        GD.Print(ResourceLoader.Exists(path) ? $"[boot] 字体：{path.GetFile()}" : "[boot] 字体未加载！");
+        GD.Print("[boot] 点击画面开始");
     }
 }
