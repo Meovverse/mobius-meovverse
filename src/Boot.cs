@@ -25,7 +25,7 @@ public partial class Boot : Control
         {
             GD.Print("[e2e] before window=" + GetWindow().Size);
             Leave();
-            _e2eTimer = GetTree().CreateTimer(3.2);
+            _e2eTimer = GetTree().CreateTimer(8.0);
             GD.Print("[e2e] timer armed");
             // ★ 回调绝不能碰 this——Boot 在换场时被释放，捕获实例=静默 ObjectDisposed
             _e2eTimer.Timeout += () =>
@@ -45,13 +45,19 @@ public partial class Boot : Control
     private bool _leaving;
     public bool TestLeaving => _leaving;
 
-    // 真人测试期保留 F3；点击 = 开始游戏
-    public override void _UnhandledInput(InputEvent e)
+    // 输入挂 _Input 而不是 _UnhandledInput：这是树输入的第一站，
+    //   任何 Control 层吞事件都不影响它（真人反馈的"点击没反应"排不掉这一层嫌疑）。
+    //   键鼠双通道：焦点被外部抢走后，第一次点回来可能被系统吃掉，键盘兜底。
+    public override void _Input(InputEvent e)
     {
         if (_leaving) return;
-        if ((e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
-            || e.IsActionPressed("ui_accept"))
+        bool click = e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left;
+        bool key = e.IsActionPressed("ui_accept");
+        if (click || key)
+        {
+            GD.Print($"[title] input start via {(click ? "click" : "key")} @ {Time.GetTicksMsec() / 1000.0:F2}s");
             Leave();
+        }
     }
 
     /// <summary>
@@ -84,10 +90,34 @@ public partial class Boot : Control
     }
 
     private int _shotWait, _autoWait;
+
+    private void LogFocus(string what)
+    {
+        var line = $"{Time.GetTicksMsec() / 1000.0:F2}s focus:{what}";
+        GD.Print("[focus] " + line);
+        try
+        {
+            using var f = Godot.FileAccess.Open("user://focus.log", Godot.FileAccess.ModeFlags.ReadWrite);
+            if (f == null) return;
+            var old = f.GetAsText();
+            f.Seek(0); f.StoreString(line + "\n" + old.TrimEnd('\n'));
+        }
+        catch { /* 日志不许弄崩游戏 */ }
+    }
     private static SceneTreeTimer _e2eTimer;   // ★ static：换场景会释放 Boot 实例，挂在实例上的定时器会被 GC——e2e 实测丢回调
 
     public override void _Ready()
     {
+        var w = GetWindow();
+        w.FocusEntered += () => LogFocus("enter");
+        w.FocusExited += () =>
+        {
+            LogFocus("exit  ← 丢焦瞬间");
+            // 丢焦时闪一次任务栏：明确"是外部抢焦点，不是游戏吞点击"
+            w.RequestAttention();
+        };
+        GD.Print("[focus] log at user://focus.log");
+
         // 运行期**绝不碰 OS 窗口尺寸**（真人反馈：点标题丢焦、之后点键全无——
         //   切换场景时重设窗口大小是根因）。只复位渲染缓冲：项目里所有场景
         //   统一 640×360 视口 + 1280×720 固定窗口；RPG 的宽视野靠相机 zoom 做。

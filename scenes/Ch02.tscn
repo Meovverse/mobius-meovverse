@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dmwaydww22kdt"]
 
-[ext_resource type="Script" path="res://src/Game/Ch02.cs" id="1"]
+[ext_resource type="Script" uid="uid://ds2tamry1bygp" path="res://src/Game/Ch02.cs" id="1"]
 
-[node name="Ch02" type="Node2D"]
+[node name="Ch02" type="Node2D" unique_id=91173289]
 script = ExtResource("1")

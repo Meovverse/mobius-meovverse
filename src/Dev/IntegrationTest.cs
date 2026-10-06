@@ -69,7 +69,7 @@ public partial class IntegrationTest : Node
         var boot = GD.Load<PackedScene>("res://scenes/Boot.tscn").Instantiate<Boot>();
         AddChild(boot);
         var mb = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = new Vector2(300, 200) };
-        boot._UnhandledInput(mb);
+        boot._Input(mb);
         Check(boot.TestLeaving, "标题：单击左键触发转场（MouseFilter 回归）");
         boot.QueueFree();
     }
