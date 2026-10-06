@@ -20,7 +20,9 @@ namespace MoShi.Dev;
 /// </summary>
 public partial class RPGExplo : Node2D
 {
-    static readonly Vector2I View = new(960, 540);   // 地图 960 宽正好一屏全宽
+    // 视野 960×540 世界像素 = 640×360 缓冲区 ÷ (2/3) 相机 zoom。窗口永远是
+    // 项目的 1280×720——运行期不改窗口大小（失焦 bug 的根因，见 Boot 同款注释）。
+    static readonly Vector2 View = new(960, 540);
     const float Speed = 70f;               // 地图像素/秒
     static readonly Vector2 Spawn = new(480, 300);      // 中央十字路
     static readonly Vector2 Goal = new(295, 62);        // A 区 7 号：左上围栏里那排碑的高碑（当初抠 stele_bg 的同源）
@@ -88,7 +90,7 @@ public partial class RPGExplo : Node2D
         _ysort.AddChild(_player);   // ★ 和树同容器才比得出前后
 
         _camOwner = new Node2D { Position = _start };
-        var cam = new Camera2D { Zoom = Vector2.One };
+        var cam = new Camera2D { Zoom = new Vector2(2f / 3f, 2f / 3f) };
         _camOwner.AddChild(cam);
         AddChild(_camOwner);
         cam.MakeCurrent();
@@ -103,14 +105,10 @@ public partial class RPGExplo : Node2D
         _marker = new Sprite2D { Texture = ImageTexture.CreateFromImage(dia), ZIndex = 30 };
         AddChild(_marker);
 
-        var win = GetWindow();
-        win.ContentScaleSize = View;
-        win.Size = View;
-
         // 开场目标卡：我是谁、来干嘛、怎么动。12 秒后自己淡出。
         var open = new Label
         {
-            Position = new Vector2(0, 8), Size = new Vector2(960, 46),
+            Position = new Vector2(0, 6), Size = new Vector2(640, 40),
             Text = "第一章 · 碑上的名字\n安和园 A 区 7 号，售后回访。（方向键走 · Enter 互动）",
             HorizontalAlignment = HorizontalAlignment.Center,
         };
@@ -402,7 +400,7 @@ public partial class RPGExplo : Node2D
         {
             if (_prompt == null)
             {
-                _prompt = new Label { Position = new Vector2(0, 60), Size = new Vector2(960, 28),
+                _prompt = new Label { Position = new Vector2(0, 46), Size = new Vector2(640, 26),
                     HorizontalAlignment = HorizontalAlignment.Center, Text = "Enter：凑近看碑面" };
                 var cl = new CanvasLayer(); cl.AddChild(_prompt); AddChild(cl);
             }

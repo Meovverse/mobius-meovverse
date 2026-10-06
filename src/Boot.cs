@@ -59,8 +59,10 @@ public partial class Boot : Control
             tw.TweenProperty(this, "position", Vector2.Zero, 0.04f);
         }
         tw.TweenProperty(_white, "color:a", 1f, 0.4f);
-        var tw2 = CreateTween();
-        tw2.TweenCallback(Callable.From(() =>
+        // ★ 原来这里另起一条空 tween 做切场景——下一帧就执行，整个闪烁转场
+        //   被跳过。收进同一条链尾：白场站稳 0.5s 再切。
+        tw.TweenInterval(0.5);
+        tw.TweenCallback(Callable.From(() =>
             GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next())));
     }
 
@@ -68,9 +70,10 @@ public partial class Boot : Control
 
     public override void _Ready()
     {
-        // ★ 从 RPGExplo（960×540 视口）回来时把游戏视口复位，否则标题比例全歪
+        // 运行期**绝不碰 OS 窗口尺寸**（真人反馈：点标题丢焦、之后点键全无——
+        //   切换场景时重设窗口大小是根因）。只复位渲染缓冲：项目里所有场景
+        //   统一 640×360 视口 + 1280×720 固定窗口；RPG 的宽视野靠相机 zoom 做。
         GetWindow().ContentScaleSize = new Vector2I(ViewportWidth, ViewportHeight);
-        GetWindow().Size = new Vector2I(ViewportWidth * 2, ViewportHeight * 2);
 
         var bg0 = new ColorRect { Color = new Color(0f, 0f, 0f), MouseFilter = MouseFilterEnum.Ignore };
         bg0.SetAnchorsPreset(LayoutPreset.FullRect);
