@@ -46,8 +46,20 @@ public static class AudioIndex
             "时长 1.57s，低于需求的 2–4s，接缝两端静音问题不大，重导时注意"),
         new("loop_chisel_run",  "res://assets/audio/loop_chisel_run.ogg",  Bus.Ambience, Tier.S0, -7.7f,
             "★ 尾部约 1s 全静音、头部有能量——程序循环时会周期性'空一拍'，待音频岗确认是否导出尾巴"),
-        new("amb_rain",         "res://assets/audio/amb_rain.ogg",         Bus.Ambience, Tier.Amb, -33.1f,
-            "时长 12s（需求 25s），首尾差约 11dB，循环点听感待人耳验"),
+        new("amb_rain",         "res://assets/audio/amb_rain.ogg",         Bus.Ambience, Tier.Amb, -16.4f,
+            "★ 四批换的 55.8s 新版（旧 12s 版作废）。超 A 档(-30) 13.6dB——"
+            + "环境音规范是'几乎听不见'，请重导；源是误名 .ogg.wav 的 24bit WAV，已转 vorbis"),
+        // ── 第四批（wait_for_integration，程序端标准化：sfx 剪尾转 16bit、amb 转 vorbis）──
+        new("sfx_peel_paper",   "res://assets/audio/sfx_peel_paper.wav",   Bus.Sfx, Tier.S1, -6.0f,
+            "★ 超 S1 档 7.9dB，且剪完尾仍 5.0s（需求 0.8s）——后段有真内容，疑多 take，复听"),
+        new("sfx_caliper_open", "res://assets/audio/sfx_caliper_open.wav", Bus.Sfx, Tier.S1, -5.9f,
+            "超档 8.1dB；剪尾后仍 3.5s（需求 0.3s）——同上待复听"),
+        new("sfx_paper_lift",   "res://assets/audio/sfx_paper_lift.wav",   Bus.Sfx, Tier.S1, -20.9f,
+            "响度达标；但 6.0s vs 需求 0.4s——'离桌那一下'被埋在长录音里，请裁"),
+        new("loop_caliper_slide","res://assets/audio/loop_caliper_slide.ogg",Bus.Ambience, Tier.S0, -26.4f,
+            "12.5s（需求 2–3s，长版无妨）；偏轻 6.4dB"),
+        new("amb_office_night", "res://assets/audio/amb_office_night.ogg", Bus.Ambience, Tier.Amb, -19.6f,
+            "54.5s；超 A 档 10.4dB，与 amb_rain 同批重导"),
 
         // ── 第二批交付（15:13）。同时处理了冲突：对方把整批塞进 bgs/ 并用回 A 前缀，
         //    与根目录规范名逐字节相同（md5 已对）→ 删重复；A12 上批是 80B 坏文件，
@@ -104,6 +116,14 @@ public static class AudioIndex
     };
 
     public static Cue Find(string id) => Delivered.Find(c => c.Id == id);
+
+    /// <summary>需求里还没交付的 ID（测试与催更共用这一个口径）。</summary>
+    public static System.Collections.Generic.List<string> Missing()
+    {
+        var l = new System.Collections.Generic.List<string>();
+        foreach (var r in Required) if (Find(r) == null) l.Add(r);
+        return l;
+    }
 
     /// <summary>播放端响度补偿：只向下压，不向上抬（抬了会削顶，且掩盖超档问题）。</summary>
     public static float GainDb(Cue c) =>
@@ -162,6 +182,7 @@ public static class AudioIndex
     public static void Sfx(string id)
     {
         var cue = Find(id); if (cue == null) return;
+        Host();   // ★ 集成测试抓出的真 bug：Sfx 从不 Init 池——先描后擦的纯键鼠路径 IndexOutOfRange
         var stream = Load(cue.File); if (stream == null) return;
         AudioStreamPlayer free = null;
         foreach (var p in Pool) if (!p.Playing) { free = p; break; }

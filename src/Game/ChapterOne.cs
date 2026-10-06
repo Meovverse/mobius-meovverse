@@ -17,7 +17,7 @@ namespace MoShi.Game;
 /// </summary>
 public partial class ChapterOne : Node2D
 {
-    enum Phase { Wiping, Choice, Ended }
+    public enum Phase { Wiping, Choice, Ended }
 
     const int W = SteleBuilder.W, H = SteleBuilder.H;
     const int BrushR = 16;
@@ -62,7 +62,7 @@ public partial class ChapterOne : Node2D
             AddChild(_hand);
             _handOn = !_save.Has("saw_wipe_hint");
         }
-        if (_handOn) _tip.Text = "灰挺厚。按住右键，画圈擦。";
+        if (_handOn) { _tip.Text = "灰挺厚。按住右键，画圈擦。"; Input.MouseMode = Input.MouseModeEnum.Hidden; }
 
         _sm = await SteleBuilder.BuildAsync(font, this);
         _lay = SteleBuilder.LastLayout;
@@ -118,9 +118,15 @@ public partial class ChapterOne : Node2D
 
     // ── 主循环 ─────────────────────────────────────────────────────────
 
+    public override void _Notification(int what)
+    {
+        // 离开场景务必把系统光标还回来
+        if (what == NotificationExitTree) Input.MouseMode = Input.MouseModeEnum.Visible;
+    }
+
     public override void _Process(double delta)
     {
-        if (!_ready) return;
+        if (!_ready || _sixteen == null && _phase != Phase.Wiping) return;   // 构建未完成时别跑分支逻辑
         var dt = (float)delta;
         var m = GetGlobalMousePosition();
 
@@ -140,10 +146,18 @@ public partial class ChapterOne : Node2D
 
         if (_phase == Phase.Wiping)
         {
-            // 手形示范：绕日期格画圈；玩家一擦就收
+            bool rightNow = Input.IsMouseButtonPressed(MouseButton.Right);
+            // 手形示范：绕日期格画圈。真人反馈"擦碑时查看图标闪烁"——
+            // 根因是示范手和系统光标在日期区反复重叠。修：按住右键**同一帧**收手，
+            // 并且示范期间藏起系统光标（只剩一只手，不打架）。
             if (_handOn)
             {
-                if (_wipeHold) { _handOn = false; _hand.Visible = false; _tip.Text = ""; _save.Set("saw_wipe_hint"); _save.Save(); }
+                if (rightNow)
+                {
+                    _handOn = false; _hand.Visible = false; _tip.Text = "";
+                    Input.MouseMode = Input.MouseModeEnum.Visible;
+                    _save.Set("saw_wipe_hint"); _save.Save();
+                }
                 else
                 {
                     var ctr = DateRect().GetCenter();
@@ -220,6 +234,43 @@ public partial class ChapterOne : Node2D
         if (m.X >= W - 46) ChooseC();
         else if (new Rect2(16, 286, 96, 60).HasPoint(m)) ChooseB();
     }
+
+    public bool TestReady => _ready && _sm != null;
+    public Phase TestPhase => _phase;
+
+    /// <summary>测试钩子：以真实同款参数横扫日期区——和手擦走同一条 Erase 路径。</summary>
+    public void Test_WipeDate()
+    {
+        var r = DateRect();
+        for (float yy = r.Position.Y - BrushR; yy < r.End.Y + BrushR; yy += 5)
+        for (float xx = r.Position.X - BrushR; xx < r.End.X + BrushR; xx += 5)
+            _sm.Erase((int)xx, (int)yy, BrushR, 40f);
+        if (DateDustMean() < 0.08f && _phase == Phase.Wiping)
+            _phase = Phase.Choice;
+    }
+
+    /// <summary>测试钩子：沿磨痕笔画整圈描满。</summary>
+    public void Test_TraceSixteen()
+    {
+        if (_sixteen == null) return;
+        var b = _sixteen.Bounds;
+        for (int loop = 0; loop < 3 && !_sixteen.Complete; loop++)
+        for (int yy = (int)b.Position.Y; yy < b.End.Y; yy++)
+        for (int xx = (int)b.Position.X; xx < b.End.X; xx++)
+            _sm.MarkTrace(_sixteen, xx, yy);
+        if (_sixteen.Complete) SixteenFound();
+    }
+
+    /// <summary>测试钩子：在同一处空擦到把碎屑压进刻痕（走真实 Erase 物理）。</summary>
+    public void Test_Overwipe()
+    {
+        var c0 = DateRect().GetCenter();
+        for (int i = 0; i < 60; i++) _sm.Erase((int)c0.X, (int)c0.Y, 6, 60f);
+    }
+    public bool Test_CrushedGrew() => _sm.Crushed.Count > 0;
+
+    public void Test_ChooseB() => ChooseB();
+    public void Test_ChooseC() => ChooseC();
 
     void ForceCleanDate()
     {

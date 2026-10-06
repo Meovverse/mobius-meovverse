@@ -33,7 +33,7 @@ public partial class RPGExplo : Node2D
     Sprite2D _player, _marker; Node2D _camOwner; Label _prompt;
     Vector2 _pos;
     List<Vector2> _route; int _leg;
-    bool _manual, _arrived, _free;
+    bool _manual, _arrived, _free, _qingming;
     int _frame, _stuck;
 
     public override void _Ready()
@@ -48,14 +48,14 @@ public partial class RPGExplo : Node2D
         _mw = _map.GetWidth(); _mh = _map.GetHeight();
 
         var args = OS.GetCmdlineUserArgs();
-        bool qingming = System.Array.IndexOf(args, "qingming") >= 0;
+        _qingming = System.Array.IndexOf(args, "qingming") >= 0;
         // -- free：自由走（不带自动寻路、不截图、不退出）——给人试玩用的模式
         _free = System.Array.IndexOf(args, "free") >= 0;
         if (_free) _manual = true;
         var bg = new Sprite2D
         {
-            Texture = qingming
-                ? ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard_qingming.png")
+            Texture = _qingming
+                ? ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard_qingming_clean.png")
                 : clean,
             Centered = false,
         };
@@ -63,7 +63,7 @@ public partial class RPGExplo : Node2D
 
         BuildWalkMask();
         CloseGaps();               // 先愈合抖动凹口
-        SpawnTrees();              // 树剥离成 Y-Sort 精灵 + 树干踢出路网
+        SpawnTrees();              // 树精灵按美术遮罩清单进 Y-Sort（须在 _qingming 赋值之后）
         ErodeFootprint();          // 侵蚀必须放在所有改路面之后
         _start = NearestSafe(Spawn);
         _goal = NearestSafe(GoalStand);
@@ -102,7 +102,7 @@ public partial class RPGExplo : Node2D
         // 开场目标卡：我是谁、来干嘛、怎么动。12 秒后自己淡出。
         var open = new Label
         {
-            Position = new Vector2(0, 12), Size = new Vector2(960, 44),
+            Position = new Vector2(0, 8), Size = new Vector2(960, 46),
             Text = "第一章 · 碑上的名字\n安和园 A 区 7 号，售后回访。（方向键走 · Enter 互动）",
             HorizontalAlignment = HorizontalAlignment.Center,
         };
@@ -236,25 +236,27 @@ public partial class RPGExplo : Node2D
         _ysort = new Node2D { YSortEnabled = true };
         AddChild(_ysort);
 
-        using var f = Godot.FileAccess.Open("res://data/gen/trees.json", Godot.FileAccess.ModeFlags.Read);
+        // 树清单由美术交付的"抠出来的树"遮罩自动拆分生成（data/gen/trees(_qingming).json，
+        // 工具见实现进度）。脚点=包围盒底边中点，Y-Sort 零偏移。
+        string treeMan = _qingming ? "res://data/gen/trees_qingming.json" : "res://data/gen/trees.json";
+        using var f = Godot.FileAccess.Open(treeMan, Godot.FileAccess.ModeFlags.Read);
         using var doc = System.Text.Json.JsonDocument.Parse(f.GetAsText());
         foreach (var t in doc.RootElement.EnumerateArray())
         {
             int x = t.GetProperty("x").GetInt32(), y = t.GetProperty("y").GetInt32();
+            int w = t.GetProperty("w").GetInt32(), h = t.GetProperty("h").GetInt32();
             var name = t.GetProperty("sprite").GetString();
             var tex = ResourceLoader.Load<Texture2D>($"res://assets/textures/{name}");
-            var img = tex.GetImage();
-            int w = img.GetWidth(), h = img.GetHeight();
 
             // 锚点在树干底（精灵底部中间），Y-Sort 拿位置 Y 比较，就是脚底
             var spr = new Sprite2D { Texture = tex, Offset = new Vector2(0, -h + 2) };
             spr.Position = new Vector2(x + w / 2f, y + h - 1);
             _ysort.AddChild(spr);
 
-            // 树干占格：底部中段的 12×12，踢出路网。只踢树干，
-            // 树冠投影范围照常能走——冠在头顶，挡路的是树干。
+            // 树干占格：底边中部 宽40%×高14 —— 只踢树干；树冠投影照常可走
+            int tw = (int)(w * 0.4f);
             for (int ty = y + h - 14; ty < y + h - 2; ty++)
-            for (int tx = x + w / 2 - 6; tx < x + w / 2 + 6; tx++)
+            for (int tx = x + w / 2 - tw / 2; tx < x + w / 2 + tw / 2; tx++)
                 if (tx >= 0 && ty >= 0 && tx < _mw && ty < _mh) _closed[ty * _mw + tx] = false;
         }
     }
@@ -386,7 +388,7 @@ public partial class RPGExplo : Node2D
         {
             if (_prompt == null)
             {
-                _prompt = new Label { Position = new Vector2(0, 40), Size = new Vector2(960, 28),
+                _prompt = new Label { Position = new Vector2(0, 60), Size = new Vector2(960, 28),
                     HorizontalAlignment = HorizontalAlignment.Center, Text = "Enter：凑近看碑面" };
                 var cl = new CanvasLayer(); cl.AddChild(_prompt); AddChild(cl);
             }
