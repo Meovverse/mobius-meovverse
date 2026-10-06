@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvxtyjbxb0qt5"
-path="res://.godot/imported/预览_两帧.png-babe12d9b2ad2fffbe0809ca351aafd3.ctex"
+uid="uid://d260siig23e3"
+path="res://.godot/imported/map_graveyard_qingming_empty.png-217f3c9dd41efbde48ec930f9a70282d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/wait_for_integration/老吴/RPG小人_四面/走路/朝左走/预览_两帧.png"
-dest_files=["res://.godot/imported/预览_两帧.png-babe12d9b2ad2fffbe0809ca351aafd3.ctex"]
+source_file="res://assets/textures/map_graveyard_qingming_empty.png"
+dest_files=["res://.godot/imported/map_graveyard_qingming_empty.png-217f3c9dd41efbde48ec930f9a70282d.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://p5g48j7y3wbm"
-path="res://.godot/imported/走路_总览.png-1fc65be7e806a9ad88f6e2e0e6918ab8.ctex"
+uid="uid://cikbslod7o7s2"
+path="res://.godot/imported/ww_L0.png-2e0262478c2ed034400d07d2d486a5e9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/wait_for_integration/老吴/RPG小人_四面/走路/走路_总览.png"
-dest_files=["res://.godot/imported/走路_总览.png-1fc65be7e806a9ad88f6e2e0e6918ab8.ctex"]
+source_file="res://assets/textures/ww_L0.png"
+dest_files=["res://.godot/imported/ww_L0.png-2e0262478c2ed034400d07d2d486a5e9.ctex"]
 
 [params]
 

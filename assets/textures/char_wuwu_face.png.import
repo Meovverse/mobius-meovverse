@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mdgas8tkms61"
-path="res://.godot/imported/呼吸_朝左_两帧.png-960fd63c286f17103505ab9a973d8e82.ctex"
+uid="uid://53ni8pa7nfhi"
+path="res://.godot/imported/char_wuwu_face.png-a2f676767ac0bebb4622510125ab72df.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/wait_for_integration/老吴/RPG小人_四面/呼吸_朝左_两帧.png"
-dest_files=["res://.godot/imported/呼吸_朝左_两帧.png-960fd63c286f17103505ab9a973d8e82.ctex"]
+source_file="res://assets/textures/char_wuwu_face.png"
+dest_files=["res://.godot/imported/char_wuwu_face.png-a2f676767ac0bebb4622510125ab72df.ctex"]
 
 [params]
 

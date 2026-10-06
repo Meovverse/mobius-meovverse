@@ -17,12 +17,58 @@ public partial class Boot : Control
     public const int ViewportWidth = 640;
     public const int ViewportHeight = 360;
 
+    private ColorRect _white;
+    private bool _leaving;
+
+    // 真人测试期保留 F3；点击 = 开始游戏
+    public override void _UnhandledInput(InputEvent e)
+    {
+        if (_leaving) return;
+        if (e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+            Leave();
+    }
+
+    /// <summary>
+    /// 转场（策划规格）：碎裂音起 → 画面与字同步闪烁、幅度递增 → 全白 → 淡出进游戏。
+    /// 闪烁用 modulate 的色偏 + position 抖动，振幅每轮 ×1.35——"越来越大"是规格原话。
+    /// </summary>
+    private void Leave()
+    {
+        _leaving = true;
+        Core.AudioIndex.Sfx("sfx_stone_crack");
+        var tw = CreateTween();
+        float k = 0.06f;
+        for (int i = 0; i < 6; i++)
+        {
+            k *= 1.35f;
+            tw.TweenProperty(this, "modulate", new Color(1 + k, 1 - k * 1.4f, 1 - k * 1.4f), 0.05f);
+            tw.TweenProperty(this, "modulate", Colors.White, 0.05f);
+            tw.TweenProperty(this, "position", new Vector2(k * 42, -k * 30), 0.04f);
+            tw.TweenProperty(this, "position", Vector2.Zero, 0.04f);
+        }
+        tw.TweenProperty(_white, "color:a", 1f, 0.4f);
+        var tw2 = CreateTween();
+        tw2.TweenCallback(Callable.From(() =>
+            GetTree().ChangeSceneToFile("res://scenes/RPGExplo.tscn")));
+    }
+
     public override void _Ready()
     {
-        // 整屏纯黑。全篇没有 BGM，黑屏本身就是这个游戏的第一帧。
-        var bg = new ColorRect { Color = new Color(0f, 0f, 0f) };
-        bg.SetAnchorsPreset(LayoutPreset.FullRect);
-        AddChild(bg);
+        var bg0 = new ColorRect { Color = new Color(0f, 0f, 0f) };
+        bg0.SetAnchorsPreset(LayoutPreset.FullRect);
+        AddChild(bg0);
+        // 四批：正式标题画面（1280×720，覆盖到全屏）
+        var titleTex = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
+        if (titleTex != null)
+        {
+            var tr = new TextureRect { Texture = titleTex, StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered };
+            tr.SetAnchorsPreset(LayoutPreset.FullRect);
+            AddChild(tr);
+        }
+        // 白闪层：转场最后一棒
+        _white = new ColorRect { Color = new Color(1, 1, 1, 0) };
+        _white.SetAnchorsPreset(LayoutPreset.FullRect);
+        AddChild(_white);
 
         var text = new Label
         {
@@ -78,6 +124,6 @@ public partial class Boot : Control
 
         // 标题曲——全篇唯一允许响音乐的地方。延后一拍：Audio 宿主节点自己也是 call_deferred 挂的树
         Callable.From(Core.AudioIndex.PlayTitle).CallDeferred();
-        hint.Text = "F3 = 资产对账";
+        hint.Text = "点击画面开始 ｜ F3 = 资产对账";
     }
 }

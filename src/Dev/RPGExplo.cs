@@ -31,6 +31,10 @@ public partial class RPGExplo : Node2D
     Vector2 _start, _goal;
     int _lastLeg = -1;
     Sprite2D _player, _marker; Node2D _camOwner; Label _prompt;
+    static readonly string[] dirKeys = ["B", "F", "L", "R"];   // 走路文件名轴
+    readonly Texture2D[,] _frames = new Texture2D[4, 2];
+    int _face = 2; float _anim;
+    static Texture2D ResLoader<T>(string path) where T : class => ResourceLoader.Load<Texture2D>(path);
     Vector2 _pos;
     List<Vector2> _route; int _leg;
     bool _manual, _arrived, _free, _qingming;
@@ -70,12 +74,16 @@ public partial class RPGExplo : Node2D
         _route = _free ? null : Simplify(BFS(_start, _goal));  // 自由模式不寻路
         GD.Print($"[rpg] 路面 {FindWalkableCount()} px，安全面 {CountSafe()} px，start={_start} goal={_goal} 路线 {_route?.Count ?? -1}");
 
-        var body = ImageTexture.CreateFromImage(Art.CharLuYunBack(160, 240));
+        // 四批：老吴 RPG 小人走路帧（四面×两帧）。站立用对应方向第 0 帧，
+        // 移动时 8fps 换帧——从此人物有方向、有步态，不再是"永远的后脑勺"。
+        for (int d = 0; d < 4; d++)
+            for (int f = 0; f < 2; f++)
+                _frames[d, f] = ResLoader<Texture2D>($"res://assets/textures/ww_" + dirKeys[d] + f + ".png");
         _player = new Sprite2D
         {
-            Texture = body,
-            Scale = new Vector2(40f / 240f, 40f / 240f),   // 26×40：碑 34px 高，人比碑略矮
-            Offset = new Vector2(0, -20),                   // 脚底对齐世界坐标
+            Texture = _frames[2, 0],
+            Scale = new Vector2(0.37f, 0.37f),              // 64×120 → 24×44：比 34px 的碑略高一点，合理
+            Offset = new Vector2(0, 22),                    // 脚底对齐世界坐标
         };
         _ysort.AddChild(_player);   // ★ 和树同容器才比得出前后
 
@@ -373,8 +381,14 @@ public partial class RPGExplo : Node2D
             if (CanStand(ny)) _pos = ny;
         }
 
+        if (v != Vector2.Zero)
+        {
+            _face = Mathf.Abs(v.X) > Mathf.Abs(v.Y) ? (v.X < 0 ? 2 : 3) : (v.Y < 0 ? 0 : 1);
+            _anim += (float)delta * 8f;
+            _player.Texture = _frames[_face, ((int)_anim) % 2];
+        }
+        else _player.Texture = _frames[_face, 0];
         _player.Position = _pos;
-        _player.FlipH = v.X < 0 ? true : v.X > 0 ? false : _player.FlipH;
         var target = new Vector2(
             Mathf.Clamp(_pos.X, View.X / 2f, _mw - View.X / 2f),
             Mathf.Clamp(_pos.Y, View.Y / 2f, _mh - View.Y / 2f));

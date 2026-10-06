@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://byxdorm6k00fk"
-path="res://.godot/imported/朝右走_01.png-285f402ed3019a21522a42f7aa1dac15.ctex"
+uid="uid://b51p6pwvqqdwg"
+path="res://.godot/imported/ww_F0.png-edb232d0e51d44a60cfa068dc015a959.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/wait_for_integration/老吴/RPG小人_四面/走路/朝右走/朝右走_01.png"
-dest_files=["res://.godot/imported/朝右走_01.png-285f402ed3019a21522a42f7aa1dac15.ctex"]
+source_file="res://assets/textures/ww_F0.png"
+dest_files=["res://.godot/imported/ww_F0.png-edb232d0e51d44a60cfa068dc015a959.ctex"]
 
 [params]
 

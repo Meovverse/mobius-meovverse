@@ -205,9 +205,10 @@ public static class SlotRegistry
             () => Art.BgRain(640, 360), false, "程序生成：雨夜");
 
         // ── D 角色：全篇不画正脸，剪影程序能顶，但姿态是表演，要美术 ──
-        Add("char_luyun_back", 160, 240, AssetIntake.Kind.Pixel, 10, false,
-            () => Art.CharLuYunBack(160, 240), true,
-            "★ 老吴背影。★ 2006 四十多岁 / 2026 六十多岁 —— 需要老年版，终章唯一的表演");
+        Add("char_luyun_back", 64, 120, AssetIntake.Kind.Pixel, 24, true,
+            null, false, "★ 四批已交：老吴背面走路帧 01（RPG 小人四面·走路），槽位从程序剪影转正");
+        Add("char_wuwu_face", 256, 320, AssetIntake.Kind.Pixel, 24, true, () => null!, false,
+            "老吴大头贴（对话头像——分镜 v3 里他话少，但第七章那两句值得有脸的上半张）");
         // ★ 2026 剧本里苏老师这个角色不存在了。这张已交付的肖像改作韩梅的档案照。
         Add("char_suteacher_wheelchair", 160, 220, AssetIntake.Kind.Pixel, 10, false,
             () => Art.CharSuTeacher(160, 220), false,

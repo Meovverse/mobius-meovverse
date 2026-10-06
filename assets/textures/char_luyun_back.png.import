@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dqbfmknf7rlmi"
-path="res://.godot/imported/四面_朝右90.png-c207aa641191bb70a08eb7e253ca9aac.ctex"
+uid="uid://bnqks6bwgebbs"
+path="res://.godot/imported/char_luyun_back.png-3781021f97e0fe1b0674ad876a2a354d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/wait_for_integration/老吴/RPG小人_四面/四面_朝右90.png"
-dest_files=["res://.godot/imported/四面_朝右90.png-c207aa641191bb70a08eb7e253ca9aac.ctex"]
+source_file="res://assets/textures/char_luyun_back.png"
+dest_files=["res://.godot/imported/char_luyun_back.png-3781021f97e0fe1b0674ad876a2a354d.ctex"]
 
 [params]
 

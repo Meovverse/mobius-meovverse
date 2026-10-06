@@ -34,10 +34,10 @@ public partial class IntegrationTest : Node
     void TestAssetsAndAudio()
     {
         SlotRegistry.Install();
-        Check(SlotRegistry.Total == 82, $"槽位总数 {SlotRegistry.Total}");
+        Check(SlotRegistry.Total == 83, $"槽位总数 {SlotRegistry.Total}");
         int artNeed = 0;
         foreach (var s in SlotRegistry.All) if (s.NeedsArt) artNeed++;
-        Check(artNeed == 5, $"待美术槽 {artNeed}（预期 5：铺子/三定景/老吴背影）");
+        Check(artNeed == 4, $"待美术槽 {artNeed}（预期 4：铺子内景/办公室/档案室/清明定景——老吴背影四批已转正）");
 
         foreach (var c in AudioIndex.Delivered)
             Check(ResourceLoader.Exists(c.File), $"音频在库：{c.Id}");
