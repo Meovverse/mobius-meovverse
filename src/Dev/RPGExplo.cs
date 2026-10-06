@@ -33,7 +33,7 @@ public partial class RPGExplo : Node2D
     Sprite2D _player, _marker; Node2D _camOwner;
     Vector2 _pos;
     List<Vector2> _route; int _leg;
-    bool _manual, _arrived;
+    bool _manual, _arrived, _free;
     int _frame, _stuck;
 
     public override void _Ready()
@@ -47,7 +47,11 @@ public partial class RPGExplo : Node2D
         _map.Convert(Image.Format.Rgb8);
         _mw = _map.GetWidth(); _mh = _map.GetHeight();
 
-        bool qingming = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "qingming") >= 0;
+        var args = OS.GetCmdlineUserArgs();
+        bool qingming = System.Array.IndexOf(args, "qingming") >= 0;
+        // -- free：自由走（不带自动寻路、不截图、不退出）——给人试玩用的模式
+        _free = System.Array.IndexOf(args, "free") >= 0;
+        if (_free) _manual = true;
         var bg = new Sprite2D
         {
             Texture = qingming
@@ -63,7 +67,7 @@ public partial class RPGExplo : Node2D
         ErodeFootprint();          // 侵蚀必须放在所有改路面之后
         _start = NearestSafe(Spawn);
         _goal = NearestSafe(GoalStand);
-        _route = Simplify(BFS(_start, _goal));  // ★ 视线法压成直线段
+        _route = _free ? null : Simplify(BFS(_start, _goal));  // 自由模式不寻路
         GD.Print($"[rpg] 路面 {FindWalkableCount()} px，安全面 {CountSafe()} px，start={_start} goal={_goal} 路线 {_route?.Count ?? -1}");
 
         var body = ImageTexture.CreateFromImage(Art.CharLuYunBack(160, 240));
@@ -318,6 +322,7 @@ public partial class RPGExplo : Node2D
 
     public override void _Process(double delta)
     {
+        if (Input.IsActionJustPressed("ui_cancel")) GetTree().Quit();
         _frame++;
         var v = Vector2.Zero;
         if (Input.IsActionPressed("ui_left")) v.X -= 1;
@@ -360,9 +365,9 @@ public partial class RPGExplo : Node2D
 
         var mt = (float)Godot.Time.GetTicksMsec() / 1000f;
         _marker.Position = Goal + new Vector2(0, Mathf.Sin(mt * 3f) * 2f - 34);
-        if (_frame == 8) Shot("rpg_start");
-        if (_frame == 150) Shot("rpg_mid");
-        if (_arrived && _frame % 30 == 0 && _frame < 3000) Shot("rpg_goal", once: true);
+        if (_frame == 8 && !_free) Shot("rpg_start");
+        if (_frame == 150 && !_free) Shot("rpg_mid");
+        if (_arrived && !_manual && _frame % 30 == 0 && _frame < 3000) Shot("rpg_goal", once: true);
     }
 
     void Arrive()
