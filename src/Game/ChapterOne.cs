@@ -34,6 +34,8 @@ public partial class ChapterOne : Node2D
 
     Phase _phase = Phase.Wiping;
     bool _breakFiredThisPress;
+    float _traceBreakCooldown;
+    int _breakPlays;
     bool _endingOne, _shot, _handOn;
     Sprite2D _hand;
     bool _ready, _wipeHold, _traceHold;
@@ -130,6 +132,7 @@ public partial class ChapterOne : Node2D
 
     public override void _Process(double delta)
     {
+        if (_traceBreakCooldown > 0) _traceBreakCooldown -= (float)delta;   // 闸门独立于早退守卫
         if (!_ready || _sixteen == null && _phase != Phase.Wiping) return;   // 构建未完成时别跑分支逻辑
         var dt = (float)delta;
         var m = GetGlobalMousePosition();
@@ -214,9 +217,12 @@ public partial class ChapterOne : Node2D
                     // Natsume 反馈两条一起修：①断音不再连环重播（0.9s 冷却 +
                     // 每次按住只响一次）②**进度不再清零**——移出只是暂停，
                     // 回来接着描。旧版"离开=全部归零"让玩家原地卡死。
-                    if (_sixteen != null && !_sixteen.Complete && _traceProgress() > 0 && !_breakFiredThisPress)
-                    {
+                    if (_sixteen != null && !_sixteen.Complete && _traceProgress() > 0
+                        && !_breakFiredThisPress && _traceBreakCooldown <= 0f)   // Citrate#4：
+                    {                                                            // 快速反复按住会绕过
                         _breakFiredThisPress = true;
+                        _traceBreakCooldown = 1.2f;                                  // 必须再加时间闸门
+                        _breakPlays++;
                         AudioIndex.Sfx("sfx_trace_break");
                         _tip.Text = "手移出去了——描过的都在。回到浅斑里接着描。";
                     }
@@ -336,9 +342,15 @@ public partial class ChapterOne : Node2D
                 if (mark == _sixteen && mark.Complete) SixteenFound();
             }
         }
-        else if (_traceHold) { _traceHold = false; }
+        else if (_traceHold)
+        {
+            _traceHold = false;
+            if (_sixteen != null && !_sixteen.Complete && _traceProgress() > 0 && _traceBreakCooldown <= 0f)
+            { _traceBreakCooldown = 1.2f; _breakPlays++; }   // 与 _Process 同一时间闸门
+        }
     }
     public float Test_SixteenProgress() => _sixteen?.Progress ?? -1f;
+    public int CountBreakSfxForTest() => _breakPlays;
 
     void SixteenFound()
     {

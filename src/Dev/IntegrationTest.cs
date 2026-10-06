@@ -193,6 +193,12 @@ public partial class IntegrationTest : Node
         scene.Test_TraceStep(new Vector2(20, 20), false);          // 手离开描迹区
         float afterLeave = scene.Test_SixteenProgress();
         Check(afterIn > 0 && afterLeave >= afterIn, $"描离开进度保留（{afterIn:P0}→{afterLeave:P0}）");
+        // Citrate#4：快速 进-出-进-出 抖动，冷却窗口内只允许一次断音
+        int plays = scene.CountBreakSfxForTest();
+        scene.Test_TraceStep(ctr + new Vector2(9, 7), true); scene.Test_TraceStep(new Vector2(20, 20), false);
+        scene.Test_TraceStep(ctr + new Vector2(9, 7), true); scene.Test_TraceStep(new Vector2(20, 20), false);
+        scene.Test_TraceStep(ctr + new Vector2(9, 7), true); scene.Test_TraceStep(new Vector2(20, 20), false);
+        Check(scene.CountBreakSfxForTest() - plays <= 1, $"断音时间闸门生效（3 次抖动仅 {scene.CountBreakSfxForTest() - plays} 响）");
 
         scene.Test_TraceSixteen();
         var st = RunState.Load();

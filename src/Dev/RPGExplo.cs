@@ -32,7 +32,7 @@ public partial class RPGExplo : Node2D
     Node2D _ysort;    // 树 + 人物同在一个 Y-Sort 容器，按脚底互相排序
     Vector2 _start, _goal;
     int _lastLeg = -1;
-    Sprite2D _player, _marker; Node2D _camOwner; Label _prompt;
+    Sprite2D _player; Node2D _camOwner; Label _prompt; Beacon _marker; Label _beaconTag; CanvasLayer _beaconLayer;
     static readonly string[] dirKeys = ["B", "F", "L", "R"];   // 走路文件名轴
     readonly Texture2D[,] _frames = new Texture2D[4, 2];
     int _face = 2; float _anim;
@@ -101,21 +101,30 @@ public partial class RPGExplo : Node2D
 
         // 目的地标只能是子节点：父节点自己的 _Draw 永远画在地图（同为子节点）
         // 之前，实测菱形被整张地图盖掉。8×8 冷白菱形，一张小 Image 解决。
-        var dia = Image.CreateEmpty(9, 9, false, Image.Format.Rgba8);
-        for (int y = 0; y < 9; y++)
-        for (int x = 0; x < 9; x++)
-            if (Mathf.Abs(x - 4) + Mathf.Abs(y - 4) <= 4)
-                dia.SetPixel(x, y, new Color(0.95f, 0.97f, 1f, 0.85f));
-        _marker = new Sprite2D { Texture = ImageTexture.CreateFromImage(dia), ZIndex = 30 };
+        // Citrate657#3：一颗小白菱形不够——玩家在路上根本注意不到。
+        // 信标柱（半透亮柱+地面脉冲环）+ 章名浮标，全程可见；越肩提示保留。
+        _marker = new Beacon { Position = Goal + new Vector2(0, -8), ZIndex = 29 };
         AddChild(_marker);
+        _beaconTag = new Label
+        {
+            Text = "▼ A 区 7 号 · 苏兰墓",
+            Modulate = new Color(1f, 0.97f, 0.85f, 0.95f),
+        };
+        _beaconTag.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+        _beaconTag.AddThemeConstantOverride("shadow_offset_x", 1);
+        _beaconTag.AddThemeConstantOverride("shadow_offset_y", 1);
+        var bl = new CanvasLayer(); bl.AddChild(_beaconTag); AddChild(bl); _beaconLayer = bl;
 
         // 开场目标卡：我是谁、来干嘛、怎么动。12 秒后自己淡出。
         var open = new Label
         {
-            Position = new Vector2(0, 6), Size = new Vector2(640, 40),
+            Position = new Vector2(0, 318), Size = new Vector2(640, 40),
             Text = "第一章 · 碑上的名字\n安和园 A 区 7 号，售后回访。（方向键走 · Enter 互动）",
             HorizontalAlignment = HorizontalAlignment.Center,
         };
+        open.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+        open.AddThemeConstantOverride("shadow_offset_x", 1);
+        open.AddThemeConstantOverride("shadow_offset_y", 1);
         var ol = new CanvasLayer(); ol.AddChild(open); AddChild(ol);
         var tw = open.CreateTween();
         tw.TweenInterval(12);
@@ -396,8 +405,12 @@ public partial class RPGExplo : Node2D
             Mathf.Clamp(_pos.Y, View.Y / 2f, _mh - View.Y / 2f));
         _camOwner.Position = _camOwner.Position.Lerp(target, 1f - Mathf.Exp(-9f * (float)delta));
 
-        var mt = (float)Godot.Time.GetTicksMsec() / 1000f;
-        _marker.Position = Goal + new Vector2(0, Mathf.Sin(mt * 3f) * 2f - 34);
+        var screen = GetCanvasTransform() * (Goal + new Vector2(0, 12));   // 柱脚下方，不压开场卡
+        if (_beaconTag != null)
+        {
+            _beaconTag.Position = screen - new Vector2(_beaconTag.GetSize().X / 2f, 0);
+            _beaconTag.Visible = screen.Y > -30 && screen.Y < 700;
+        }
         // 走到碑前（或自动抵达）→ Enter 切特写。M2 的第一条接缝。
         bool near = (_pos - GoalStand).Length() < 26f;
         if (near || _arrived)
@@ -432,4 +445,31 @@ public partial class RPGExplo : Node2D
     }
 }
 
+/// <summary>
+/// 目的地信标：地面脉冲环 + 半透亮柱 + 顶端菱形。Citrate657#3——
+/// 一颗会飘的小菱形在草丛里等于没有；亮柱从地面立到天，路过谁都能看到。
+/// </summary>
+public partial class Beacon : Node2D
+{
+    private float _t;
+    public override void _Process(double delta) { _t += (float)delta; QueueRedraw(); }
+    public override void _Draw()
+    {
+        float pulse = 0.5f + 0.5f * Mathf.Sin(_t * 2.4f);
+        // 地面暗托 + 脉冲环：先垫底再画环，草地上也看得见
+        DrawCircle(Vector2.Zero, 17f, new Color(0.05f, 0.05f, 0.06f, 0.30f));
+        float ring = 7f + 11f * (_t % 1.2f / 1.2f);
+        DrawArc(Vector2.Zero, ring, 0, Mathf.Tau, 32, new Color(1f, 0.93f, 0.72f, 0.95f - 0.55f * (_t % 1.2f / 1.2f)), 2f);
+        // 亮柱：44px，底部近实
+        for (int i = 0; i < 44; i++)
+        {
+            float a = (0.62f + 0.22f * pulse) * (1f - i / 50f);
+            DrawLine(new Vector2(0, -i), new Vector2(0, -i - 1), new Color(1f, 0.93f, 0.66f, a), 6f);
+        }
+        // 顶菱（加大）
+        var top = new Vector2(0, -50 - 3f * pulse);
+        DrawPolygon(new[] { top + Vector2.Up * 6, top + Vector2.Right * 4.5f, top + Vector2.Down * 6, top + Vector2.Left * 4.5f },
+                    new[] { new Color(1f, 0.98f, 0.9f, 1f) });
+    }
+}
 #endif
