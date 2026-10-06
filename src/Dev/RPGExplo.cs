@@ -99,6 +99,18 @@ public partial class RPGExplo : Node2D
         win.ContentScaleSize = View;
         win.Size = View;
 
+        // 开场目标卡：我是谁、来干嘛、怎么动。12 秒后自己淡出。
+        var open = new Label
+        {
+            Position = new Vector2(0, 12), Size = new Vector2(960, 44),
+            Text = "第一章 · 碑上的名字\n安和园 A 区 7 号，售后回访。（方向键走 · Enter 互动）",
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        var ol = new CanvasLayer(); ol.AddChild(open); AddChild(ol);
+        var tw = open.CreateTween();
+        tw.TweenInterval(12);
+        tw.TweenProperty(open, "modulate:a", 0f, 1.5);
+
         _pos = _start;
     }
 

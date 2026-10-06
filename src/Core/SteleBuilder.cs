@@ -201,11 +201,16 @@ public static class SteleBuilder
         for (int x = 0; x < W; x++, i++)
         {
             var c = stone.GetPixel(x, y);
+            // 石底程序噪点的振幅对"字"来说太吵（真人反馈"粗糙"的一半来源）：
+            // 往中灰收一半对比，字和缝的对比靠 Height/Repair 层拉开。
+            float l = (c.R + c.G + c.B) / 3f;
+            float r = c.R + (0.62f - c.R) * 0.45f, g = c.G + (0.60f - c.G) * 0.45f, b = c.B + (0.57f - c.B) * 0.45f;
+            _ = l;
             // 补刻的那一格，石头是新的：底色本身就偏亮一档（这是 clue_01 的视觉真相）
-            float k = sm.BatchMap[i] == (byte)Batch.Repair ? 1.10f : 1f;
-            buf[i * 3] = (byte)(c.R * 255 * k);
-            buf[i * 3 + 1] = (byte)(c.G * 255 * k);
-            buf[i * 3 + 2] = (byte)(c.B * 255 * k);
+            float k = sm.BatchMap[i] == (byte)Batch.Repair ? 1.12f : 1f;
+            buf[i * 3] = (byte)(r * 255 * k);
+            buf[i * 3 + 1] = (byte)(g * 255 * k);
+            buf[i * 3 + 2] = (byte)(b * 255 * k);
         }
         return buf;
     }

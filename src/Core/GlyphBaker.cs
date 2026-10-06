@@ -24,6 +24,14 @@ public partial class GlyphBaker : Node
     /// <summary>一个要烘的字：字形、落位框、批次、刻痕深度。</summary>
     public readonly record struct Slot(char Ch, Rect2 Box, Batch Batch, int Depth);
 
+    /// <summary>
+    /// ★ 融合像素是 **12px 位图字体**——任何"直接画 96px"都是在放大 8 倍糊图，
+    ///   这就是"中文字体过于粗糙"的全部原因。正确做法：整张 mask 用 1/8 画布
+    ///   （96px 字槽 → 12px 原生的位图字号）绘制，再 **最近邻 ×8 放大**。
+    ///   笔画全部落在 8px 网格上，判定几何不变，像素反而更干净。
+    /// </summary>
+    public const int PixelScale = 8;
+
     private SubViewport? _vp;
     private Control? _canvas;
 
@@ -49,6 +57,8 @@ public partial class GlyphBaker : Node
         // 离屏视口
         _vp = new SubViewport
         {
+            // ★ 保持全尺寸 viewport（小尺寸在 headless 下读不回纹理）。
+            //   1/8 的含义体现在"只画左上角那块 + 取回后放大"。
             Size = new Vector2I(w, h),
             TransparentBg = true,
             RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
@@ -76,6 +86,10 @@ public partial class GlyphBaker : Node
             return null;
         }
         img.Convert(Image.Format.Rgba8);
+        // 取左上 w/8 × h/8 的"原生像素区"，最近邻 ×8 放大回全尺寸
+        var small = img.GetRegion(new Rect2I(0, 0, w / PixelScale, h / PixelScale));
+        small.Resize(w, h, Image.Interpolation.Nearest);
+        img = small;
 
         Threshold(img, surface, slots);
         Cleanup();
@@ -87,14 +101,14 @@ public partial class GlyphBaker : Node
         foreach (var s in slots)
         {
             if (s.Ch == ' ' || s.Ch == '　') continue;
-            int size = Mathf.RoundToInt(s.Box.Size.Y);
-            if (size < 6) continue;
+            int size = Mathf.Max(6, Mathf.RoundToInt(s.Box.Size.Y / (float)PixelScale));
 
             // CJK 字是全角的：advance == fontSize。
             // 所以把**基线**放在 box 底部往上 = fontSize - descent，
             // 字形的 em 框就正好落在 box 里，横向从 box 左边缘开始。
             float descent = font.GetDescent(size);
-            var baseline = new Vector2(s.Box.Position.X, s.Box.End.Y - descent);
+            var baseline = new Vector2(s.Box.Position.X / PixelScale,
+                                       s.Box.End.Y / (float)PixelScale - descent);
 
             _canvas!.DrawString(font, baseline, s.Ch.ToString(),
                                 HorizontalAlignment.Left, -1, size,

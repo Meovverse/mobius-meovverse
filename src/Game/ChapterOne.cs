@@ -33,7 +33,8 @@ public partial class ChapterOne : Node2D
     RunState _save;
 
     Phase _phase = Phase.Wiping;
-    bool _endingOne, _shot;
+    bool _endingOne, _shot, _handOn;
+    Sprite2D _hand;
     bool _ready, _wipeHold, _traceHold;
     float _renderAcc;
     int _dateSeen, _shotF;
@@ -49,8 +50,19 @@ public partial class ChapterOne : Node2D
         AddChild(_stone);
 
         _hint = new Label { Position = new Vector2(16, 330), Size = new Vector2(560, 24) };
-        _tip  = new Label { Position = new Vector2(16, 8),   Size = new Vector2(608, 20) };
+        _tip  = new Label { Position = new Vector2(16, 8),   Size = new Vector2(608, 40) };
         AddChild(_hint); AddChild(_tip);
+        // 真人反馈"进去根本不知道怎么玩"——演示阶段先教再谈美学：
+        // 首次进来，一只手在日期格上自动画圈示范擦。玩家一动手它就消失，永不再见。
+        var handTex = ResourceLoader.Load<Texture2D>("res://assets/textures/ui_cursor_hand.png");
+        if (handTex != null)
+        {
+            _hand = new Sprite2D { Texture = handTex, Scale = new Vector2(0.6f, 0.6f), ZIndex = 50,
+                                   Modulate = new Color(1, 1, 1, 0.85f) };
+            AddChild(_hand);
+            _handOn = !_save.Has("saw_wipe_hint");
+        }
+        if (_handOn) _tip.Text = "灰挺厚。按住右键，画圈擦。";
 
         _sm = await SteleBuilder.BuildAsync(font, this);
         _lay = SteleBuilder.LastLayout;
@@ -128,6 +140,17 @@ public partial class ChapterOne : Node2D
 
         if (_phase == Phase.Wiping)
         {
+            // 手形示范：绕日期格画圈；玩家一擦就收
+            if (_handOn)
+            {
+                if (_wipeHold) { _handOn = false; _hand.Visible = false; _tip.Text = ""; _save.Set("saw_wipe_hint"); _save.Save(); }
+                else
+                {
+                    var ctr = DateRect().GetCenter();
+                    float a = (float)Godot.Time.GetTicksMsec() / 700f;
+                    _hand.Position = ctr + new Vector2(Mathf.Cos(a) * 26, Mathf.Sin(a) * 16);
+                }
+            }
             bool right = Input.IsMouseButtonPressed(MouseButton.Right);
             if (right)
             {
@@ -142,7 +165,11 @@ public partial class ChapterOne : Node2D
             if (++_dateSeen > 20)
             {
                 _dateSeen = 0;
-                if (DateDustMean() < 0.08f) { _phase = Phase.Choice; _hint.Text = ""; _tip.Text = "「16」那一格的石头，比周围的白。"; }
+                if (DateDustMean() < 0.08f)
+                {
+                    _phase = Phase.Choice; _hint.Text = "";
+                    _tip.Text = "「16」那一格的石头，比周围的白。\n按住左键，顺着白缝慢慢描。右下角是随身登记本，最右边——转身就走。";
+                }
             }
         }
         else if (_phase == Phase.Choice)
