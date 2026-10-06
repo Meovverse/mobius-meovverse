@@ -24,6 +24,7 @@ public partial class Boot : Control
 
     public override void _Ready()
     {
+        MoShi.Game.MenuHud.Ensure(GetTree(), null, false);   // 标题本身就是菜单
         // 复位渲染缓冲；运行期从不改 OS 窗口尺寸（丢焦教训见 git log）
         GetWindow().ContentScaleSize = new Vector2I(ViewportWidth, ViewportHeight);
 
