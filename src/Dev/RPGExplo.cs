@@ -20,13 +20,14 @@ namespace MoShi.Dev;
 /// </summary>
 public partial class RPGExplo : Node2D
 {
-    const int Zoom = 2;                    // 640×360 窗口 → 看见 320×180 的地图
+    static readonly Vector2I View = new(960, 540);   // 地图 960 宽正好一屏全宽
     const float Speed = 70f;               // 地图像素/秒
     static readonly Vector2 Spawn = new(480, 300);      // 中央十字路
     static readonly Vector2 Goal = new(295, 62);        // A 区 7 号：左上围栏里那排碑的高碑（当初抠 stele_bg 的同源）
     static readonly Vector2 GoalStand = new(240, 101);  // 碑前最近的路点（围栏外的横向小径）
 
     Image _map; bool[] _walk, _closed, _safe; int _mw, _mh;
+    Node2D _ysort;    // 树 + 人物同在一个 Y-Sort 容器，按脚底互相排序
     Vector2 _start, _goal;
     int _lastLeg = -1;
     Sprite2D _player, _marker; Node2D _camOwner;
@@ -37,7 +38,7 @@ public partial class RPGExplo : Node2D
 
     public override void _Ready()
     {
-        var tex = ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard.png");
+        var tex = ResourceLoader.Load<Texture2D>("res://assets/textures/map_graveyard_clean.png");
         _map = tex.GetImage();
         _map.Convert(Image.Format.Rgb8);
         _mw = _map.GetWidth(); _mh = _map.GetHeight();
@@ -46,11 +47,12 @@ public partial class RPGExplo : Node2D
         AddChild(bg);
 
         BuildWalkMask();
-        CloseGaps();               // 先愈合
-        ErodeFootprint();          // 再侵蚀
+        CloseGaps();               // 先愈合抖动凹口
+        SpawnTrees();              // 树剥离成 Y-Sort 精灵 + 树干踢出路网
+        ErodeFootprint();          // 侵蚀必须放在所有改路面之后
         _start = NearestSafe(Spawn);
         _goal = NearestSafe(GoalStand);
-        _route = BFS(_start, _goal);
+        _route = Simplify(BFS(_start, _goal));  // ★ 视线法压成直线段
         GD.Print($"[rpg] 路面 {FindWalkableCount()} px，安全面 {CountSafe()} px，start={_start} goal={_goal} 路线 {_route?.Count ?? -1}");
 
         var body = ImageTexture.CreateFromImage(Art.CharLuYunBack(160, 240));
@@ -59,12 +61,11 @@ public partial class RPGExplo : Node2D
             Texture = body,
             Scale = new Vector2(40f / 240f, 40f / 240f),   // 26×40：碑 34px 高，人比碑略矮
             Offset = new Vector2(0, -20),                   // 脚底对齐世界坐标
-            ZIndex = 10,
         };
-        AddChild(_player);
+        _ysort.AddChild(_player);   // ★ 和树同容器才比得出前后
 
         _camOwner = new Node2D { Position = _start };
-        var cam = new Camera2D { Zoom = new Vector2(Zoom, Zoom) };
+        var cam = new Camera2D { Zoom = Vector2.One };
         _camOwner.AddChild(cam);
         AddChild(_camOwner);
         cam.MakeCurrent();
@@ -78,6 +79,10 @@ public partial class RPGExplo : Node2D
                 dia.SetPixel(x, y, new Color(0.95f, 0.97f, 1f, 0.85f));
         _marker = new Sprite2D { Texture = ImageTexture.CreateFromImage(dia), ZIndex = 30 };
         AddChild(_marker);
+
+        var win = GetWindow();
+        win.ContentScaleSize = View;
+        win.Size = View;
 
         _pos = _start;
     }
@@ -108,8 +113,39 @@ public partial class RPGExplo : Node2D
         return n;
     }
 
+    /// <summary>
+    /// 视线法简化。顿挫感的主因是 500+ 个单像素航点，每个航点方向都在抖，
+    /// 速度全耗在"对准下一个像素"上。贪心找"从当前点能直走到的最远点"作
+    /// 航点——留下的每一段都是可直行的线段。比"方向改变点"更狠：
+    /// 8 邻域 BFS 在直廊里交替 (1,0)/(0,-1)，方向改点仍有 131 个假拐点，
+    /// 视线法直接压成十几段直线。
+    /// </summary>
+    List<Vector2> Simplify(List<Vector2> path)
+    {
+        if (path == null || path.Count < 3) return path;
+        var keep = new List<Vector2>();
+        int i = 0;
+        while (i < path.Count - 1)
+        {
+            int j = path.Count - 1;
+            while (j > i + 1 && !LineOk(path[i], path[j])) j--;
+            keep.Add(path[j]);
+            i = j;
+        }
+        return keep;
+    }
+
+    bool LineOk(Vector2 a, Vector2 b)
+    {
+        float d = a.DistanceTo(b);
+        int n = Mathf.Max(1, (int)(d * 2));
+        for (int k = 0; k <= n; k++)
+            if (!Safe(a.Lerp(b, k / (float)n))) return false;
+        return true;
+    }
+
     bool Walkable(Vector2 p) =>
-        p.X >= 0 && p.Y >= 0 && p.X < _mw && p.Y < _mh && _walk[(int)p.Y * _mw + (int)p.X];
+        p.X >= 0 && p.Y >= 0 && p.X < _mw && p.Y < _mh && _walk[Mathf.RoundToInt(p.Y) * _mw + Mathf.RoundToInt(p.X)];
 
     /// <summary>
     /// 二值闭运算（膨胀2再腐蚀2）。小径边缘是抖动色，逐像素分类会在路沿
@@ -155,6 +191,45 @@ public partial class RPGExplo : Node2D
     }
 
     /// <summary>
+    /// 树木层。方案演进：
+    ///  ✗ 颜色聚类找树：草地和树冠同色，4-邻域整片连通（实测一个 959×579
+    ///    的巨块），删路网和遮挡层全错——这就是"人物从树顶走过"的根因。
+    ///  ✗ 固定遮挡层：树永远盖在人上面，人走到树"前面"时也盖，深度反了。
+    ///  ✓ 离线模板匹配（cv2，prop_pine 当模板）产出 8 棵树的位置清单
+    ///    data/gen/trees.json；同时把树从底图剥离（data/… 生成脚本补草/补路），
+    ///    每棵树存成独立 sprite。运行时树和人物放同一个 Y-Sort 容器，
+    ///    按脚底 Y 互相排序：人在树后→树盖人，人在树前→人盖树，天然正确。
+    ///    树干那一格踢出路网（人绕树走），树冠悬在路面上方可以穿行。
+    /// </summary>
+    void SpawnTrees()
+    {
+        _ysort = new Node2D { YSortEnabled = true };
+        AddChild(_ysort);
+
+        using var f = Godot.FileAccess.Open("res://data/gen/trees.json", Godot.FileAccess.ModeFlags.Read);
+        using var doc = System.Text.Json.JsonDocument.Parse(f.GetAsText());
+        foreach (var t in doc.RootElement.EnumerateArray())
+        {
+            int x = t.GetProperty("x").GetInt32(), y = t.GetProperty("y").GetInt32();
+            var name = t.GetProperty("sprite").GetString();
+            var tex = ResourceLoader.Load<Texture2D>($"res://assets/textures/{name}");
+            var img = tex.GetImage();
+            int w = img.GetWidth(), h = img.GetHeight();
+
+            // 锚点在树干底（精灵底部中间），Y-Sort 拿位置 Y 比较，就是脚底
+            var spr = new Sprite2D { Texture = tex, Offset = new Vector2(0, -h + 2) };
+            spr.Position = new Vector2(x + w / 2f, y + h - 1);
+            _ysort.AddChild(spr);
+
+            // 树干占格：底部中段的 12×12，踢出路网。只踢树干，
+            // 树冠投影范围照常能走——冠在头顶，挡路的是树干。
+            for (int ty = y + h - 14; ty < y + h - 2; ty++)
+            for (int tx = x + w / 2 - 6; tx < x + w / 2 + 6; tx++)
+                if (tx >= 0 && ty >= 0 && tx < _mw && ty < _mh) _closed[ty * _mw + tx] = false;
+        }
+    }
+
+    /// <summary>
     /// 把"脚的占位"预烙进可走面：_safe = 中心+四脚探针全在土路上。
     ///
     /// ★ 不做这一步必然卡死：BFS 在原始路面上能找到中心可走、但脚占位
@@ -192,7 +267,7 @@ public partial class RPGExplo : Node2D
     }
 
     bool Safe(Vector2 p) =>
-        p.X >= 0 && p.Y >= 0 && p.X < _mw && p.Y < _mh && _safe[(int)p.Y * _mw + (int)p.X];
+        p.X >= 0 && p.Y >= 0 && p.X < _mw && p.Y < _mh && _safe[Mathf.RoundToInt(p.Y) * _mw + Mathf.RoundToInt(p.X)];
 
     bool CanStand(Vector2 p) => Safe(p);
 
@@ -242,7 +317,7 @@ public partial class RPGExplo : Node2D
 
         if (!_manual && !_arrived && _route != null)
         {
-            while (_leg < _route.Count && (_route[_leg] - _pos).Length() < 2.5f) _leg++;
+            while (_leg < _route.Count && (_route[_leg] - _pos).Length() < 5f) _leg++;
             if (_leg >= _route.Count) { Arrive(); }
             else
             {
@@ -267,13 +342,15 @@ public partial class RPGExplo : Node2D
 
         _player.Position = _pos;
         _player.FlipH = v.X < 0 ? true : v.X > 0 ? false : _player.FlipH;
-        _camOwner.Position = new Vector2(
-            Mathf.Clamp(_pos.X, 160, _mw - 160),
-            Mathf.Clamp(_pos.Y, 90, _mh - 90));
+        var target = new Vector2(
+            Mathf.Clamp(_pos.X, View.X / 2f, _mw - View.X / 2f),
+            Mathf.Clamp(_pos.Y, View.Y / 2f, _mh - View.Y / 2f));
+        _camOwner.Position = _camOwner.Position.Lerp(target, 1f - Mathf.Exp(-9f * (float)delta));
 
         var mt = (float)Godot.Time.GetTicksMsec() / 1000f;
         _marker.Position = Goal + new Vector2(0, Mathf.Sin(mt * 3f) * 2f - 34);
         if (_frame == 8) Shot("rpg_start");
+        if (_frame == 150) Shot("rpg_mid");
         if (_arrived && _frame % 30 == 0 && _frame < 3000) Shot("rpg_goal", once: true);
     }
 
