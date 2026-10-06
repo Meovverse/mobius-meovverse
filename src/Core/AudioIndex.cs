@@ -269,6 +269,8 @@ public static class AudioIndex
         _music.Play();
     }
 
+    public static bool TestMusicPlaying => _music != null && _music.Playing;
+
     public static void StopTitle(float fadeSec = 1.2f)
     {
         _titleOn = false;

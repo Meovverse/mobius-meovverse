@@ -62,7 +62,10 @@ public partial class ChapterOne : Node2D
             AddChild(_hand);
             _handOn = !_save.Has("saw_wipe_hint");
         }
-        if (_handOn) { _tip.Text = "灰挺厚。按住右键，画圈擦。"; Input.MouseMode = Input.MouseModeEnum.Hidden; }
+        // 上一版为了"手和光标不重叠"把系统光标整个藏了——真人反馈反过来变成
+        // "找不到鼠标、以为游戏没反应"。光标永远可见是底线；示范手挪到日期区
+        // 左下方画圈，和玩家手位不抢，任何按键一响它就退场。
+        if (_handOn) _tip.Text = "灰挺厚。按住右键，画圈擦。";
 
         _sm = await SteleBuilder.BuildAsync(font, this);
         _lay = SteleBuilder.LastLayout;
@@ -152,17 +155,17 @@ public partial class ChapterOne : Node2D
             // 并且示范期间藏起系统光标（只剩一只手，不打架）。
             if (_handOn)
             {
-                if (rightNow)
+                bool anyDown = rightNow || Input.IsMouseButtonPressed(MouseButton.Left);
+                if (anyDown)
                 {
                     _handOn = false; _hand.Visible = false; _tip.Text = "";
-                    Input.MouseMode = Input.MouseModeEnum.Visible;
                     _save.Set("saw_wipe_hint"); _save.Save();
                 }
                 else
                 {
                     var ctr = DateRect().GetCenter();
                     float a = (float)Godot.Time.GetTicksMsec() / 700f;
-                    _hand.Position = ctr + new Vector2(Mathf.Cos(a) * 26, Mathf.Sin(a) * 16);
+                    _hand.Position = ctr + new Vector2(-58 + Mathf.Cos(a) * 22, 6 + Mathf.Sin(a) * 12);
                 }
             }
             bool right = Input.IsMouseButtonPressed(MouseButton.Right);

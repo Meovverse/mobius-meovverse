@@ -85,6 +85,8 @@ public partial class Boot : Control
     private void Leave(string scenePath)
     {
         _leaving = true;
+        // ★ 标题曲只属于封面：真人反馈进游戏后它还在响。转场起就 1.5s 淡出。
+        Core.AudioIndex.StopTitle(1.5f);
         Core.AudioIndex.Sfx("sfx_stone_crack");
         var tw = CreateTween();
         float k = 0.06f;
@@ -111,7 +113,7 @@ public partial class Boot : Control
             _e2eTimer.Timeout += () =>
             {
                 var tree = (SceneTree)Engine.GetMainLoop();
-                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name);
+                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name + " musicPlaying=" + MoShi.Core.AudioIndex.TestMusicPlaying);
                 tree.Quit();
             };
         }
