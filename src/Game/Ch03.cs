@@ -29,13 +29,10 @@ public partial class Ch03 : StorySceneBase
 
     private void Gate()
     {
-        Choices(new List<(Rect2, string, System.Action)>
-        {
-            (new Rect2(90, 250, 140, 60), "把保险合同和碑面日期并排", A),
-            (new Rect2(260, 250, 140, 60), "看事故报告原件和保险副本", B),
-            (new Rect2(440, 250, 140, 60), "直接去问苏航", C),
-        }, null);
-        Subs(null, "（他想从哪一张纸查起？）");
+        DocChoices("为什么有人要改一天？答案在哪张纸上——",
+            ("保险合同", "受益人是谁？日期和赔付有什么关系", A),
+            ("事故报告：原件 ↔ 副本", "递进保险公司那份，日期对得上吗", B),
+            ("去问苏航本人", "当面问，也许能要到说法", C));
     }
 
     private void A()

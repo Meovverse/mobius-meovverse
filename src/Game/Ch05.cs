@@ -27,13 +27,10 @@ public partial class Ch05 : StorySceneBase
 
     private void Gate()
     {
-        Choices(new List<(Rect2, string, System.Action)>
-        {
-            (new Rect2(120, 240, 160, 60), "韩湘的死亡证明 ↔ 失踪时间", A),
-            (new Rect2(360, 240, 160, 60), "韩梅最后出现 ↔ \"韩湘\"出现", B),
-            (new Rect2(250, 315, 140, 40), "认为韩湘就是韩梅（停）", C),
-        }, null);
-        Subs(null, "（两份档案之间，他先看哪条线？）");
+        DocChoices("两份档案并排放着。哪条线先接上？",
+            ("韩湘的死亡证明 ↔ 失踪时间", "死人不能在六月活动", A),
+            ("韩梅最后出现 ↔ \"韩湘\"出现", "五月之后，谁在用她的名字", B),
+            ("到此为止", "韩湘就是韩梅吧。别查了", C));
     }
 
     private void A()
@@ -53,8 +50,7 @@ public partial class Ch05 : StorySceneBase
     private void C()
     {
         Save.SetChoice(5, 'C'); Save.Save();
-        Subs(() => GetTree().ChangeSceneToFile("res://scenes/Boot.tscn"),
-            "结局二 · 被隐藏的身份",
+        EndingCard.Open(GetTree(), "结局二 · 被隐藏的身份",
             "最危险的伪造，不是造一个假人，而是让一个死人替活人承担身份。");
     }
     private void Go(string line) =>

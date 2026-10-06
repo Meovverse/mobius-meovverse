@@ -22,13 +22,10 @@ public partial class Ch04 : StorySceneBase
 
     private void Gate()
     {
-        Choices(new List<(Rect2, string, System.Action)>
-        {
-            (new Rect2(80, 250, 150, 60), "调她的账本，对苏航的账户", A),
-            (new Rect2(250, 250, 150, 60), "查她的离职手续和物品", B),
-            (new Rect2(430, 250, 150, 60), "先放一放，查别的", C),
-        }, null);
-        Subs(null, "（他把手放在哪一份上？）");
+        DocChoices("韩梅的抽屉拉开了一半。先查哪一摞？",
+            ("她的账本 ↔ 苏航的账户", "铅笔线连到哪儿，钱就藏在哪儿", A),
+            ("离职手续与个人物品清单", "真要走的人，杯子不会留在桌上", B),
+            ("先放一放", "也许只是失踪。去查别的", C));
     }
 
     private void A()

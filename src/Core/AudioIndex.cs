@@ -94,6 +94,9 @@ public static class AudioIndex
             "★ 需求文档里没有这个 ID——按名猜是撕纸的'停'尾（配 sfx_paper_tear 用）。已入库备用，用途请音频岗确认"),
         new("sfx_stone_crack", "res://assets/audio/sfx_stone_crack.mp3", Bus.Sfx, Tier.S2, -1.2f,
             "★ 四批。标题→游戏的转场碎裂音。峰 -1.2dBFS：又一个超档（压 6.8dB 播放）。mp3 格式入库（Godot 原生支持）"),
+        new("amb_common_night", "res://assets/audio/amb_common_night.ogg", Bus.Ambience, Tier.Amb, -32.0f,
+            "★ 音频岗的万金油夜环境（109.6s）。任何缺环境音的场景直接用它顶——"
+            + "amb_graveyard/amb_archive 未到位时由 AudioIndex 自动回退到此件"),
         new("title_theme",      "res://assets/audio/title_theme.ogg",      Bus.Music, Tier.Music, -18.8f,
             "★ 标题画面专属——'全篇没有BGM'的唯一例外（2026-10-06 拍板）。" +
             "源为 18.4MB 48kHz WAV，已重编码 192k vorbis（64s/1MB）；进游戏即停，正文永不响"),
@@ -118,6 +121,15 @@ public static class AudioIndex
     };
 
     public static Cue Find(string id) => Delivered.Find(c => c.Id == id);
+
+    /// <summary>取声：缺专用环境音时回退到万金油 CommomNight（音频岗约定）。</summary>
+    public static Cue FindOrFallback(string id)
+    {
+        var c = Find(id);
+        if (c != null) return c;
+        if (id.StartsWith("amb_")) return Find("amb_common_night");
+        return null;
+    }
 
     /// <summary>需求里还没交付的 ID（测试与催更共用这一个口径）。</summary>
     public static System.Collections.Generic.List<string> Missing()

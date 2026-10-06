@@ -14,8 +14,9 @@ public partial class MenuHud : CanvasLayer
     private static MenuHud _inst;
     public static MenuHud Instance => _inst;
     public string TestChapterText => _chap?.Text ?? "";
+    public bool TestBackVisible => _back != null && _back.Visible && GodotObject.IsInstanceValid(_back);
     private Label _chap;
-    private Button _back;
+    private TextureButton _back;
 
     public static MenuHud Ensure(SceneTree tree, string chapter, bool show)
     {
@@ -43,11 +44,15 @@ public partial class MenuHud : CanvasLayer
         _chap.AddThemeConstantOverride("shadow_offset_y", 1);
         AddChild(_chap);
 
-        _back = new Button
+        // ≡ 三条横线（Citrate#8：样式就该简洁）。程序画的图标，不依赖主题。
+        var icon = Image.CreateEmpty(34, 26, false, Image.Format.Rgba8);
+        foreach (int ly in new[] { 5, 12, 19 })
+            for (int x = 5; x < 29; x++) { icon.SetPixel(x, ly, new Color(1, 1, 1, 0.9f)); icon.SetPixel(x, ly + 1, new Color(1, 1, 1, 0.55f)); }
+        _back = new TextureButton
         {
-            Text = "返回主菜单",
-            Position = new Vector2(552, 24), Size = new Vector2(84, 22),
-            Modulate = new Color(1, 1, 1, 0.8f),
+            TextureNormal = ImageTexture.CreateFromImage(icon),
+            Position = new Vector2(602, 4),
+            TooltipText = "返回主菜单",
         };
         _back.Pressed += () => GetTree().ChangeSceneToFile("res://scenes/Boot.tscn");
         AddChild(_back);

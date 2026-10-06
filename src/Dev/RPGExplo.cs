@@ -89,7 +89,10 @@ public partial class RPGExplo : Node2D
         _player = new Sprite2D
         {
             Texture = _frames[2, 0],
-            Scale = new Vector2(0.37f, 0.37f),              // 64×120 → 24×44：比 34px 的碑略高一点，合理
+            // Citrate#12：人物贴图里人物本体只有 ~25px 宽、~125px 高（0.2 的
+            // 肩高比），等比缩放后是根"竹竿"。横向单独放大到 0.58，得到
+            // 15×46 的肩高比（≈0.33，正常人形），像素风下不违和。
+            Scale = new Vector2(0.58f, 0.37f),
             Offset = new Vector2(0, 22),                    // 脚底对齐世界坐标
         };
         _ysort.AddChild(_player);   // ★ 和树同容器才比得出前后
@@ -119,7 +122,7 @@ public partial class RPGExplo : Node2D
         // 开场目标卡：我是谁、来干嘛、怎么动。12 秒后自己淡出。
         var open = new Label
         {
-            Position = new Vector2(0, 318), Size = new Vector2(640, 40),
+            Position = new Vector2(0, 298), Size = new Vector2(640, 58),
             Text = "第一章 · 碑上的名字\n安和园 A 区 7 号，售后回访。（方向键走 · Enter 互动）",
             HorizontalAlignment = HorizontalAlignment.Center,
         };

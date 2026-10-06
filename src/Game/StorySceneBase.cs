@@ -122,6 +122,7 @@ public partial class StorySceneBase : Node2D
     /// <summary>系统静默：字幕只在停留够久或点击后推进，绝不自动跳红字。</summary>
     public override void _Process(double dt)
     {
+        DocHover();
         if (_shotF >= 0)
         {
             _shotF++;
@@ -149,47 +150,49 @@ public partial class StorySceneBase : Node2D
     protected void Dialogue((string who, string line)[] lines, Action done)
     {
         // 通铺三边：贴左、贴右、贴底（真人反馈：对话框要占满左侧右侧与下侧）
+        ClearDocs();
         var panel = new Panel { Visible = false, Position = new Vector2(0, VH - 116), Size = new Vector2(VW, 116), MouseFilter = Control.MouseFilterEnum.Ignore };
         TestPanel = panel;
         // ★ ExpandMode 必须 Ignore：默认 KeepSize 会让控件涨到纹理原始尺寸
         //   （交付人像 512×768），这就是"头像大大超出界面、文字被盖没"的根因。
-        var face = new TextureRect { Position = new Vector2(14, 10), Size = new Vector2(88, 96),
+        // Citrate#10：头像放大，头的上端要高过文本框上沿——所以让头像向上
+        // "探出"面板（Panel 不裁子节点），并整体左置，正文从它右侧开始，互不遮挡。
+        var face = new TextureRect { Position = new Vector2(8, -80), Size = new Vector2(132, 178),
                                      ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                                      StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                                      MouseFilter = Control.MouseFilterEnum.Ignore };
         TestFace = face;
-        var txt = new RichTextLabel { Position = new Vector2(116, 12), Size = new Vector2(VW - 132, 92),
+        var txt = new RichTextLabel { Position = new Vector2(150, 12), Size = new Vector2(VW - 168, 92),
                                       BbcodeEnabled = true, Text = "", MouseFilter = Control.MouseFilterEnum.Ignore };
         panel.AddChild(face); panel.AddChild(txt);
         Ui.AddChild(panel);
 
-        var texWu = ResourceLoader.Load<Texture2D>("res://assets/textures/ui_dialog_player.png");
-        var texSu = ResourceLoader.Load<Texture2D>("res://assets/textures/ui_dialog_npc.png");
+        // Citrate#11 四种文本框的归属：
+        //   旁白    = 无花边、白底   → ui_dialog_npc（中性白条）
+        //   主角老吴 = 有花边、黄底   → ui_frame_yellow_lace
+        //   其他人物 = 有花边、白底   → ui_frame_white_lace（由 ui_frame_lace 蓝改白派生）
+        var texNarrate = ResourceLoader.Load<Texture2D>("res://assets/textures/ui_dialog_npc.png");
+        var texWu = ResourceLoader.Load<Texture2D>("res://assets/textures/ui_frame_yellow_lace.png");
+        var texOther = ResourceLoader.Load<Texture2D>("res://assets/textures/ui_frame_white_lace.png");
         var faceWu = ResourceLoader.Load<Texture2D>("res://assets/textures/char_wuwu_face.png");
+        var faceSu = ResourceLoader.Load<Texture2D>("res://assets/textures/char_suhang.png");
         int i = 0;
         void Show()
         {
             if (i >= lines.Length) { panel.Visible = false; done?.Invoke(); return; }
             var (who, text) = lines[i];
             panel.Visible = true;
-            StyleBox sb;
-            if (who != "")
-            {
-                // Scale 拉伸：StyleBoxTexture 默认按纹理原始尺寸画（320×64 的
-                // 对话框底只占面板一小截）——真人反馈"对话框显示不全"的病根。
-                var st = new StyleBoxTexture { Texture = who == "wu" ? texWu : texSu };
-                st.AxisStretchHorizontal = StyleBoxTexture.AxisStretchMode.Stretch;
-                st.AxisStretchVertical = StyleBoxTexture.AxisStretchMode.Stretch;
-                sb = st;
-                face.Texture = who == "wu" ? faceWu : null;
-                face.Visible = face.Texture != null;
-            }
-            else
-            {
-                sb = new StyleBoxFlat { BgColor = new Color(0.09f, 0.09f, 0.095f, 0.92f) };
-                face.Visible = false;
-            }
-            panel.AddThemeStyleboxOverride("panel", sb);
+            // Scale 拉伸：StyleBoxTexture 默认按纹理原始尺寸画会只占一小截。
+            var st = new StyleBoxTexture { Texture = who == "wu" ? texWu
+                                                       : who == "" ? texNarrate : texOther };
+            st.AxisStretchHorizontal = StyleBoxTexture.AxisStretchMode.Stretch;
+            st.AxisStretchVertical = StyleBoxTexture.AxisStretchMode.Stretch;
+            panel.AddThemeStyleboxOverride("panel", st);
+            // 人物才有头像；旁白不占位（正文左移，不留空框）
+            face.Texture = who == "wu" ? faceWu : who == "su" ? faceSu : null;
+            face.Visible = face.Texture != null;
+            txt.Position = new Vector2(face.Visible ? 150 : 24, 12);
+            txt.Size = new Vector2(VW - (face.Visible ? 168 : 48), 92);
             txt.Text = "[b]" + (who == "wu" ? "老吴" : who == "su" ? "苏航" : "") + "[/b]  " + text;
         }
         void Advance() { i++; Show(); }
@@ -256,6 +259,74 @@ public partial class StorySceneBase : Node2D
                 }
         }
         _inputHandler = OnInput;
+    }
+
+    // ── 资料卡选择（#3#4#5：纯文字罗列+隐形热区 = 玩家不知道该点哪）────
+    private sealed class Doc { public Panel Root; public StyleBoxFlat Sb; public Rect2 Box; public Action Pick; }
+    private readonly System.Collections.Generic.List<Doc> _docs = new();
+    private Label _choiceHint;
+
+    /// <summary>把分支画成桌上的资料：每份一张纸卡（标题+一句"做什么"），
+    /// 悬停微微提亮，点击即选。选择前桌上就摆着这些——点哪里一目了然。</summary>
+    protected void DocChoices(string hint, params (string title, string sub, Action pick)[] docs)
+    {
+        ClearDocs();
+        if (_choiceHint == null)
+        {
+            _choiceHint = new Label { Position = new Vector2(16, 6), Size = new Vector2(560, 18),
+                Modulate = new Color(1, 1, 1, 0.75f) };
+            _choiceHint.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+            Ui.AddChild(_choiceHint);
+        }
+        _choiceHint.Text = hint;
+
+        int n = docs.Length; float gap = 12f, w = 640f - 48 - gap * (n - 1);
+        float cw = w / n, y = 210, ch = 130;
+        for (int i = 0; i < n; i++)
+        {
+            var sb = new StyleBoxFlat { BgColor = new Color(0.145f, 0.14f, 0.135f, 0.97f),
+                BorderColor = new Color(0.62f, 0.58f, 0.5f, 0.5f) };
+            foreach (var side in new[] { Side.Left, Side.Right, Side.Top, Side.Bottom }) sb.SetBorderWidth(side, 1);
+            var card = new Panel { Position = new Vector2(24 + i * (cw + gap), y), Size = new Vector2(cw, ch),
+                MouseFilter = Control.MouseFilterEnum.Ignore };
+            card.AddThemeStyleboxOverride("panel", sb);
+            card.AddChild(new Label { Position = new Vector2(10, 10), Size = new Vector2(cw - 20, 20),
+                Text = docs[i].title });
+            card.AddChild(new Label { Position = new Vector2(10, 36), Size = new Vector2(cw - 20, ch - 46),
+                Text = docs[i].sub, AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Modulate = new Color(1, 1, 1, 0.55f) });
+            // 纸屑感：左上角一道浅色"纸边"
+            card.AddChild(new ColorRect { Color = new Color(0.72f, 0.68f, 0.55f, 0.16f),
+                Position = new Vector2(0, 0), Size = new Vector2(cw, 4) });
+            Ui.AddChild(card);
+            _docs.Add(new Doc { Root = card, Sb = sb, Box = new Rect2(24 + i * (cw + gap), y, cw, ch), Pick = docs[i].pick });
+        }
+        _inputHandler = OnDocInput;
+    }
+
+    private void OnDocInput(InputEvent e)
+    {
+        if (e is not InputEventMouseButton { Pressed: true } mb) return;
+        foreach (var d in _docs)
+            if (d.Box.HasPoint(mb.Position)) { var act = d.Pick; ClearDocs(); act.Invoke(); return; }
+    }
+
+    protected void ClearDocs()
+    {
+        foreach (var d in _docs) { d.Root.QueueFree(); }
+        _docs.Clear();
+        _inputHandler = null;
+        if (_choiceHint != null) _choiceHint.Text = "";
+    }
+
+    /// <summary>悬停提亮（每帧一次鼠标位，成本可忽略）。</summary>
+    private void DocHover()
+    {
+        if (_docs.Count == 0) return;
+        var m = GetGlobalMousePosition();
+        foreach (var d in _docs)
+            d.Sb.BgColor = d.Box.HasPoint(m) ? new Color(0.2f, 0.195f, 0.185f, 0.98f)
+                                             : new Color(0.145f, 0.14f, 0.135f, 0.97f);
     }
 
     protected void Sfx(string id) => AudioIndex.Sfx(id);

@@ -24,11 +24,9 @@ public partial class Ch07 : StorySceneBase
 
     private void Ask()
     {
-        Choices(new System.Collections.Generic.List<(Rect2, string, System.Action)>
-        {
-            (new Rect2(140, 250, 150, 50), "问：韩梅呢？", () => { AskLine(); }),
-            (new Rect2(360, 250, 150, 50), "沉默", () => { Save.Set("asked_hanmei_false"); Money(); }),
-        }, null);
+        DocChoices("信封推到面前。老吴得先决定说不说那一句话。",
+            ("开口：「韩梅呢？」", "问出来，今晚就别想睡", () => AskLine()),
+            ("沉默", "先收下话，什么都还不收", () => { Save.Set("asked_hanmei_false"); Money(); }));
     }
 
     private void AskLine()
@@ -47,21 +45,18 @@ public partial class Ch07 : StorySceneBase
     {
         Dialogue(new[]
         {
-            ("", "几天后，又有人来铺子：\"不要再查。\""),
+            ("", "几天后，又有人来铺子：「不要再查。」"),
             ("", "夜里只剩桌上那个信封。石头不会撒谎——但人会。"),
         }, () =>
-        Subs(() => Choices(new System.Collections.Generic.List<(Rect2, string, System.Action)>
-        {
-            (new Rect2(180, 250, 120, 60), "收下信封", Take),
-            (new Rect2(340, 250, 120, 60), "把信封推回去", Refuse),
-        }, null), "桌上还剩那个信封。"));
+        Subs(() => DocChoices("夜里，桌上只剩那个信封。",
+            ("收下信封", "答应那句话：「日期一直是十六号」", Take),
+            ("把信封推回去", "让他明天自己拿走", Refuse)), "钱和一句要背二十年的话，二选一。"));
     }
 
     private void Take()
     {
         Save.Set(RunState.Flag.MoneyTaken); Save.SetChoice(6, 'A'); Save.Save();
-        Subs(() => GetTree().ChangeSceneToFile("res://scenes/Boot.tscn"),
-            "结局三 · 妥协", "知道真相，却选择沉默。");
+        EndingCard.Open(GetTree(), "结局三 · 妥协", "知道真相，却选择沉默。");
     }
     private void Refuse()
     {

@@ -42,14 +42,11 @@ public partial class Ch02 : StorySceneBase
 
     private void Gate()
     {
-        // 调查选择二：三个都能"放到光标上"的东西
-        Choices(new List<(Rect2, string, System.Action)>
-        {
-            (new Rect2(120, 30, 150, 60), "把医院和殡仪馆的记录调出来，并排", () => Pick('A')),
-            (new Rect2(400, 140, 150, 60), "量一量：成交和死亡之间隔了多久", () => Pick('B')),
-            (new Rect2(520, 300, 110, 52), "相信墓碑（离开）", () => Pick('C')),
-        }, null);
-        Subs(null, "（光标放在哪一样上，就在查哪一样。）");
+        // 调查选择二：摆成桌上的三份资料（隐形热区已被投诉两次）
+        DocChoices("他想接着往下查。桌上摊着三份东西。",
+            ("医院与殡仪馆的原始记录", "和系统并排——遗体到底哪天接走的", () => Pick('A')),
+            ("墓位购买记录", "量一量：买墓位和死亡之间隔了多久", () => Pick('B')),
+            ("只信墓碑", "家属留下的“正式信息”。合上抽屉", () => Pick('C')));
     }
 
     private void Pick(char c)
@@ -71,8 +68,9 @@ public partial class Ch02 : StorySceneBase
                 End(Save.EndingOneFired
                     ? "结局一 · 没发现碑的问题——真相就在眼前，但你没有看见。"
                     : "你现在相信的\"事实\"，可能正是凶手希望你相信的。");
-                if (Save.EndingOneFired) { GetTree().ChangeSceneToFile("res://scenes/ChapterOne.tscn"); return; }
-                Gate();   // 没触发结局一：退回重选（系统不出声，只把光标还给你）
+                    if (Save.EndingOneFired)
+            { EndingCard.Open(GetTree(), "结局一 · 没发现碑的问题", "真相就在眼前，但你没有看见。"); return; }
+                Gate();   // 没触发结局一：资料收回桌上，重新摆开
                 return;
         }
     }

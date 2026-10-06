@@ -35,6 +35,7 @@ public partial class ChapterOne : Node2D
     Phase _phase = Phase.Wiping;
     bool _breakFiredThisPress;
     float _traceBreakCooldown;
+    float _brushPileCooldown;
     int _breakPlays;
     bool _endingOne, _shot, _handOn;
     Sprite2D _hand;
@@ -134,6 +135,7 @@ public partial class ChapterOne : Node2D
     public override void _Process(double delta)
     {
         if (_traceBreakCooldown > 0) _traceBreakCooldown -= (float)delta;   // 闸门独立于早退守卫
+        if (_brushPileCooldown > 0) _brushPileCooldown -= (float)delta;
         if (!_ready || _sixteen == null && _phase != Phase.Wiping) return;   // 构建未完成时别跑分支逻辑
         var dt = (float)delta;
         var m = GetGlobalMousePosition();
@@ -178,7 +180,14 @@ public partial class ChapterOne : Node2D
             {
                 int removed = _sm.Erase((int)m.X, (int)m.Y, BrushR, 240f * dt);
                 if (!_wipeHold) { _wipeHold = true; AudioIndex.StartHold("loop_brush_stone"); }
-                if (removed > 0 && (removed % 900) < 300) AudioIndex.Sfx("sfx_brush_pile");
+                // Citrate#9（高优先级）：原来是 removed % 900 < 300 的帧判定——
+                // 擦动时几乎每帧都成立，碎屑音被反复从头掐播，听起来像卡带。
+                // 改为时间闸门：每 1.4s 至多一声，且不打断正在播的那一声。
+                if (removed > 0 && _brushPileCooldown <= 0f)
+                {
+                    AudioIndex.Sfx("sfx_brush_pile");
+                    _brushPileCooldown = 1.4f;
+                }
                 if (removed > 0) _renderAcc = 9;      // 每帧都脏，交给节流
             }
             else if (_wipeHold) { _wipeHold = false; AudioIndex.StopHold(); }
@@ -191,6 +200,7 @@ public partial class ChapterOne : Node2D
                 {
                     _phase = Phase.Choice; _hint.Text = "";
                     ShowGlow(true);
+                    ShowCards();
                     _tip.Text = "「16」这一格的石头比周围浅——那是被磨掉重刻过的地方。\n按住鼠标左键，在那块浅斑里慢慢描过去。";
                 }
             }
@@ -317,12 +327,38 @@ public partial class ChapterOne : Node2D
 
     // ── 分支（全部落 RunState，对分镜稿"调查选择一"）──────────────────
 
+    private Panel _cardBook, _cardExit;
+    private void ShowCards()
+    {
+        _cardBook = Card(new Vector2(14, 282), new Vector2(120, 62), "随身登记本", "你抄下的每一行都在里面");
+        _cardExit = Card(new Vector2(586, 150), new Vector2(42, 170), "离开", "今天到此为止");
+    }
+    private Panel Card(Vector2 pos, Vector2 size, string title, string sub)
+    {
+        var sb = new StyleBoxFlat { BgColor = new Color(0.145f, 0.14f, 0.135f, 0.95f) };
+        foreach (var side in new[] { Side.Left, Side.Right, Side.Top, Side.Bottom }) sb.SetBorderWidth(side, 1);
+        sb.BorderColor = new Color(0.62f, 0.58f, 0.5f, 0.5f);
+        var panel = new Panel { Position = pos, Size = size, Visible = false };
+        panel.AddThemeStyleboxOverride("panel", sb);
+        panel.AddChild(new Label { Position = new Vector2(8, 6), Text = title });
+        var sl = new Label { Position = new Vector2(8, 26), Text = sub, Size = new Vector2(size.X - 14, size.Y - 30),
+                             AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.5f) };
+        panel.AddChild(sl);
+        UiAdd(panel);
+        return panel;
+    }
+    private Control _uiHost;
+    private void UiAdd(Control k) { _uiHost ??= new Control { MouseFilter = Control.MouseFilterEnum.Ignore }; if (!_uiHost.IsInsideTree()) AddChild(_uiHost); _uiHost.AddChild(k); }
+    private void HideCards() { if (_cardBook != null) _cardBook.Visible = false; if (_cardExit != null) _cardExit.Visible = false; }
+
     private GlowRect _glow;
     private void ShowGlow(bool on)
     {
         if (_sixteen == null) return;
         _glow ??= new GlowRect { Bounds = _sixteen.Bounds.Grow(6) };
         if (on && !_glow.IsInsideTree()) AddChild(_glow);
+        if (_cardBook != null) _cardBook.Visible = on;
+        if (_cardExit != null) _cardExit.Visible = on;
         if (_glow.IsInsideTree()) _glow.Visible = on;
     }
     private float _traceProgress() => _sixteen == null ? 0f : _sixteen.Progress;
@@ -353,10 +389,12 @@ public partial class ChapterOne : Node2D
     public float Test_SixteenProgress() => _sixteen?.Progress ?? -1f;
     public int CountBreakSfxForTest() => _breakPlays;
 
+    void HideGlowCards() { ShowGlow(false); HideCards(); }
+
     void SixteenFound()
     {
         AudioIndex.Sfx("sfx_trace_done");
-        ShowGlow(false);
+        HideGlowCards();
         _save.Set(RunState.Flag.Clue01); _save.Set(RunState.Flag.StoneAltered);
         _save.SetChoice(1, 'A');
         _save.Ledger.Add(new LedgerLine { Text = "「16」底下磨掉过什么。刻痕还是我的，字不是了。" });
@@ -378,10 +416,13 @@ public partial class ChapterOne : Node2D
     {
         _save.SetChoice(1, 'C');
         _save.Save();
-        _endingOne = _save.EndingOneFired;
-        _tip.Text = _endingOne
-            ? "结局一 · 没发现碑的问题\n\n真相就在眼前，但你没有看见。\n\n按 Enter 回标题"
-            : "你移开了视线。\n按 Enter 回碑前";
+        HideGlowCards();
+        if (_save.EndingOneFired)
+        {
+            EndingCard.Open(GetTree(), "结局一 · 没发现碑的问题", "真相就在眼前，但你没有看见。");
+            return;
+        }
+        _tip.Text = "你移开了视线。\n按 Enter 回碑前";
         _phase = Phase.Ended;
     }
 }

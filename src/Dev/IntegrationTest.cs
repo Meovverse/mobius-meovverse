@@ -26,6 +26,7 @@ public partial class IntegrationTest : Node
         // 真人反馈"标题进去直接跳到第五章"就是被测试污染的档。
         RunState.SavePath = "user://test_ledger.json";
         RunState.DeleteSave();
+        MoShi.Game.EndingCard.SuppressSceneChange = true;   // 测试不许触发真换场
         Run();
     }
 
@@ -64,8 +65,9 @@ public partial class IntegrationTest : Node
     {
         // 章节场景烟测：加载 + 跑 60 帧不出脚本错误即过（错误由 Godot 打 ERROR 行，
         // 这里只保证不崩；崩溃级会直接抛出）。
-        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn", "res://scenes/Ch03.tscn", "res://scenes/Ch04.tscn", "res://scenes/Ch05.tscn", "res://scenes/Ch06.tscn", "res://scenes/Ch07.tscn", "res://scenes/Ch08.tscn", "res://scenes/Ch09.tscn", "res://scenes/Ch10.tscn", "res://scenes/Ch11.tscn" })
+        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn", "res://scenes/Ch03.tscn", "res://scenes/Ch04.tscn", "res://scenes/Ch05.tscn", "res://scenes/Ch06.tscn", "res://scenes/Ch07.tscn", "res://scenes/Ch08.tscn", "res://scenes/Ch09.tscn", "res://scenes/Ch10.tscn", "res://scenes/Ch11.tscn", "res://scenes/EndingCard.tscn" })
         {
+            if (!GodotObject.IsInstanceValid(this)) return;   // 序章等场景的自动换场可能波及测试树
             // 直接实例化场景根（.tscn 的脚本在 StorySceneBase 下）
             var inst = GD.Load<PackedScene>(scn).Instantiate();
             AddChild(inst);
@@ -117,29 +119,29 @@ public partial class IntegrationTest : Node
         var click = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = new Vector2(320, 180) };
         var release = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = new Vector2(320, 180) };
         bool advanced = false;
-        for (int i = 0; i < 40 && !advanced; i++)
+        for (int i2 = 0; i2 < 6 && !advanced; i2++)   // 限步：绝不推进到序章尾部的自动换场
         {
             p._UnhandledInput(click); p._UnhandledInput(release);
-            for (int f = 0; f < 6; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            advanced = !p.TestSubVisible || i > 6;   // 字幕在放下一条或已切入对话
+            for (int f = 0; f < 8; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            advanced = !p.TestSubVisible || i2 > 4;
         }
         Check(advanced, "序章：点击推进字幕（第二次踩同一坑的回归）");
-        // 步进到带头像的台词（wu 行），断言布局几何在界内——真人反馈"头像爆框"回归
+
         bool faceSeen = false;
-        for (int i = 0; i < 40 && !faceSeen; i++)
+        for (int i2 = 0; i2 < 4 && !faceSeen; i2++)   // 4 步内到 wu 行，绝不到序章尾部换场
         {
+            if (!GodotObject.IsInstanceValid(p)) break;
             p.TestAdvance();
             for (int f = 0; f < 25; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             faceSeen = p.TestFace != null && p.TestFace.Visible;
         }
-        var fp = p.TestFace;
-        if (fp != null && fp.Visible)
+        Check(faceSeen, "序章：步进到带头像的台词");
+        if (faceSeen)
         {
-            var r = fp.GetGlobalRect();
+            var r = p.TestFace.GetGlobalRect();
             Check(r.Position.X >= 0 && r.End.X <= 640 && r.End.Y <= 360,
                   $"头像在视口内 ({r.Position.X},{r.Position.Y})-({r.End.X},{r.End.Y})");
         }
-        else Check(false, "步进 40 次仍未出现带头像的台词——断言失效");
         var pp = p.TestPanel;
         if (pp != null)
         {
@@ -158,17 +160,6 @@ public partial class IntegrationTest : Node
         return c;
     }
 
-    void TestTraceForgiveness()
-    {
-        // Natsume #1/#2 回归：①离开描迹区进度保留（旧版清零=卡死）②断音
-        // 一次按住至多一次。不依赖 _Process（本用例直接走 TraceStep）。
-        RunState.DeleteSave();
-        var one = new ChapterOne();
-        AddChild(one);
-        _ = one;   // 异步构建，下面轮询
-        Check(true, "描迹宽容度用例装载");
-    }
-
     async System.Threading.Tasks.Task TestChapterOneFlow()
     {
         // ── A 路：擦 → 露 → 描 → clue_01 + 落盘可回读 ──
@@ -184,7 +175,7 @@ public partial class IntegrationTest : Node
 
         scene.Test_WipeDate();
         var hud = MenuHud.Instance;
-        Check(hud != null && hud.Visible && hud.TestChapterText.Contains("第一章"),
+        Check(hud != null && hud.Visible && hud.TestBackVisible && hud.TestChapterText.Contains("第一章"),
               $"HUD 章节角标就位（「{hud?.TestChapterText}」+返回按钮）");   // Citrate#5/#6
         Check(scene.TestPhase == ChapterOne.Phase.Choice, "擦净日期区 → 解锁 Choice");
 
