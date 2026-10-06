@@ -12,6 +12,27 @@ public static class ChapterFlow
 {
     public const string Entry2026 = "res://scenes/RPGExplo.tscn";
 
+    /// <summary>路由目标 → 人话章节名（标题界面必须告诉玩家"点开始去哪"）。</summary>
+    public static string Label(string scenePath)
+    {
+        if (scenePath.EndsWith("ChPrologue.tscn")) return "序章 · 石头不会撒谎";
+        if (scenePath.EndsWith("ChapterOne.tscn")) return "第一章 · 碑上的名字";
+        if (scenePath.EndsWith("Ch02.tscn")) return "第二章 · 查档";
+        if (scenePath.EndsWith("Ch03.tscn")) return "第三章 · 两个日期";
+        if (scenePath.EndsWith("Ch04.tscn")) return "第四章 · 韩梅";
+        if (scenePath.EndsWith("Ch05.tscn")) return "第五章 · 死者韩湘";
+        if (scenePath.EndsWith("Ch06.tscn")) return "第六章 · 石料";
+        if (scenePath.EndsWith("Ch07.tscn")) return "第七章 · 苏航的压力";
+        if (scenePath.EndsWith("Ch08.tscn")) return "第八章 · 最危险的选择";
+        if (scenePath.EndsWith("Ch09.tscn")) return "第九章 · 真相拼合";
+        if (scenePath.EndsWith("Ch10.tscn")) return "第十章 · 真相";
+        if (scenePath.EndsWith("Ch11.tscn")) return "第十一章 · 最后的选择";
+        if (scenePath.EndsWith("Ch12.tscn")) return "第十二章 · 立碑";
+        if (scenePath.EndsWith("Ch13.tscn")) return "第十三章 · 真相公开";
+        if (scenePath.EndsWith("Epilogue.tscn")) return "尾声";
+        return "墓园";
+    }
+
     public static string Next()
     {
         var s = RunState.Load();

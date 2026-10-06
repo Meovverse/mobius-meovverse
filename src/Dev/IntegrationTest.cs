@@ -81,9 +81,9 @@ public partial class IntegrationTest : Node
         // 真人反馈"单击无反应"回归：合成一次左键，Boot 必须进转场
         var boot = GD.Load<PackedScene>("res://scenes/Boot.tscn").Instantiate<Boot>();
         AddChild(boot);
-        var mb = new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = new Vector2(300, 200) };
-        boot._Input(mb);
-        Check(boot.TestLeaving, "标题：单击左键触发转场（MouseFilter 回归）");
+        var enter = new InputEventKey { Keycode = Key.Enter, Pressed = true };
+        boot._Input(enter);
+        Check(boot.TestLeaving, "标题：Enter 触发当前菜单项→转场");
         boot.QueueFree();
     }
 

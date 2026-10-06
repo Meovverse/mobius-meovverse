@@ -1,106 +1,82 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace MoShi;
 
 /// <summary>
-/// 启动场景 / 全局入口。
+/// 启动场景 / 全局入口 + 标题菜单（存档系统的门面）。
 ///
-/// 职责（按实现顺序补齐）：
-///   1. 持有 <see cref="Core.RunState"/>（账本即存档）
-///   2. 章节点切换
-///   3. 一次性音效总线
-///
-/// M0 阶段这里只做一件事：确认 640×360 + 中文字体这条管线是通的。
+/// 菜单就是普通 UI——"系统不出声"禁的是游戏内提示，标题画面是游戏外的。
+/// 三条设计：
+///   ① 有档必说清"继续去哪一章、账本多厚、上次何时"；
+///   ② 抹账要二次确认（那是老吴二十年，不是一句 yes/no）；
+///   ③ 续玩/新开局/退出是选项，不是快捷键彩蛋。
 /// </summary>
 public partial class Boot : Control
 {
     public const int ViewportWidth = 640;
     public const int ViewportHeight = 360;
 
-    private ColorRect _white;
+    private enum Screen { Menu, ConfirmWipe, Ledger }
 
-    public override void _Process(double delta)
-    {
-        if (_autoWait > 0 && --_autoWait == 0 && !_leaving)
-        {
-            GD.Print("[e2e] before window=" + GetWindow().Size);
-            Leave();
-            _e2eTimer = GetTree().CreateTimer(8.0);
-            GD.Print("[e2e] timer armed");
-            // ★ 回调绝不能碰 this——Boot 在换场时被释放，捕获实例=静默 ObjectDisposed
-            _e2eTimer.Timeout += () =>
-            {
-                var tree = (SceneTree)Engine.GetMainLoop();
-                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name);
-                tree.Quit();
-            };
-        }
-        if (_shotWait > 0 && --_shotWait == 0)
-        {
-            GetViewport().GetTexture().GetImage().SavePng("res://data/gen/title_shot.png");
-            GD.Print("[title] shot 已存");
-            GetTree().Quit();
-        }
-    }
+    private ColorRect _white;
     private bool _leaving;
+    private Screen _screen = Screen.Menu;
+    private int _sel;
+    private readonly List<(Label node, System.Action act)> _items = new();
+    private Label _confirm1, _confirm2;
+    private Label _ledgerBtn;
+    private Panel _ledgerPanel;
+    private Screen _confirmFrom = Screen.Menu;   // 删档确认后回哪儿
+    private int _ledgerSel;
+    private int _shotWait, _autoWait;
+    private bool _openLedgerFirst;
+    private static SceneTreeTimer _e2eTimer;
+
     public bool TestLeaving => _leaving;
 
-    // 输入挂 _Input 而不是 _UnhandledInput：这是树输入的第一站，
-    //   任何 Control 层吞事件都不影响它（真人反馈的"点击没反应"排不掉这一层嫌疑）。
-    //   键鼠双通道：焦点被外部抢走后，第一次点回来可能被系统吃掉，键盘兜底。
-    public override void _Input(InputEvent e)
+    public override void _Ready()
     {
-        if (_leaving) return;
-        var mb = e as InputEventMouseButton;
-        bool click = mb != null && mb.Pressed && mb.ButtonIndex == MouseButton.Left;
-        bool key = e.IsActionPressed("ui_accept");
-        // Shift+点击 = 抹掉进度重新开始（ChapterFlow 会从序章走起）
-        if (click && (mb.ShiftPressed || Input.IsKeyPressed(Key.Shift)))
-        {
-            Core.RunState.DeleteSave();
-            GD.Print("[title] 存档已清空，从头开始");
-        }
-        if (click || key)
-        {
-            GD.Print($"[title] input start via {(click ? "click" : "key")} @ {Time.GetTicksMsec() / 1000.0:F2}s");
-            Leave();
-            return;
-        }
-        // 无边框窗口没有 × 可点：标题界面 Esc = 退出游戏
-        if (e.IsActionPressed("ui_cancel"))
-            GetTree().Quit();
-    }
+        // 复位渲染缓冲（运行期从不改 OS 窗口尺寸——丢焦教训见 git log）
+        GetWindow().ContentScaleSize = new Vector2I(ViewportWidth, ViewportHeight);
 
-    /// <summary>
-    /// 转场（策划规格）：碎裂音起 → 画面与字同步闪烁、幅度递增 → 全白 → 淡出进游戏。
-    /// 闪烁用 modulate 的色偏 + position 抖动，振幅每轮 ×1.35——"越来越大"是规格原话。
-    /// </summary>
-    private void Leave()
-    {
-        _leaving = true;
-        Core.AudioIndex.Sfx("sfx_stone_crack");
-        var tw = CreateTween();
-        float k = 0.06f;
-        for (int i = 0; i < 6; i++)
-        {
-            k *= 1.35f;
-            tw.TweenProperty(this, "modulate", new Color(1 + k, 1 - k * 1.4f, 1 - k * 1.4f), 0.05f);
-            tw.TweenProperty(this, "modulate", Colors.White, 0.05f);
-            tw.TweenProperty(this, "position", new Vector2(k * 42, -k * 30), 0.04f);
-            tw.TweenProperty(this, "position", Vector2.Zero, 0.04f);
-        }
-        tw.TweenProperty(_white, "color:a", 1f, 0.4f);
-        // ★ 原来这里另起一条空 tween 做切场景——下一帧就执行，整个闪烁转场
-        //   被跳过。收进同一条链尾：白场站稳 0.5s 再切。
-        tw.TweenInterval(0.5);
-        tw.TweenCallback(Callable.From(() =>
-        {
-            GD.Print("[e2e] flash end -> switch, window=" + GetWindow().Size);
-            GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next());
-        }));
-    }
+        var w = GetWindow();
+        w.FocusEntered += () => LogFocus("enter");
+        w.FocusExited += () => { LogFocus("exit"); w.RequestAttention(); };
 
-    private int _shotWait, _autoWait;
+        AddChild(new ColorRect { Color = new Color(0, 0, 0), MouseFilter = MouseFilterEnum.Ignore,
+                                 Size = new Vector2(ViewportWidth, ViewportHeight) });
+        var titleTex = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
+        if (titleTex != null)
+            AddChild(new Sprite2D { Texture = titleTex, Centered = false, Scale = new Vector2(0.5f, 0.5f) });
+        // 菜单区底衬：封面上烧了"開始遊戲/PRESS ANY KEY"，不压一层菜单字读不出。
+        // （已反馈美术：终版封面最好去掉烧字，菜单是程序的事。）
+        AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.42f),
+            Position = new Vector2(0, 252), Size = new Vector2(ViewportWidth, 108),
+            MouseFilter = MouseFilterEnum.Ignore });
+        _white = new ColorRect { Color = new Color(1, 1, 1, 0), MouseFilter = MouseFilterEnum.Ignore,
+                                 Size = new Vector2(ViewportWidth, ViewportHeight) };
+        AddChild(_white);
+
+        var path = ProjectSettings.GetSetting("gui/theme/custom_font").AsString();
+        Core.ProcGen.CachedFont = ThemeDB.FallbackFont;
+        if (ResourceLoader.Exists(path))
+            Core.ProcGen.CachedFont = ResourceLoader.Load<Font>(path);
+
+        Core.SlotRegistry.Install();
+        GD.Print(Core.SlotRegistry.Audit());
+        foreach (var slot in Core.SlotRegistry.All)
+            _ = Core.AssetIntake.Get(slot.Key);
+        GD.Print(Core.AssetIntake.DumpReport());
+        GD.Print(Core.AudioIndex.Audit());
+        Callable.From(Core.AudioIndex.PlayTitle).CallDeferred();
+
+        BuildMenu();
+
+        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0) _shotWait = 20;
+        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot2") >= 0) { _shotWait = 60; _openLedgerFirst = true; }
+        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "autostart") >= 0) _autoWait = 72;
+    }
 
     private void LogFocus(string what)
     {
@@ -115,80 +91,259 @@ public partial class Boot : Control
         }
         catch { /* 日志不许弄崩游戏 */ }
     }
-    private static SceneTreeTimer _e2eTimer;   // ★ static：换场景会释放 Boot 实例，挂在实例上的定时器会被 GC——e2e 实测丢回调
 
-    public override void _Ready()
+    // ── 菜单构建 ────────────────────────────────────────────────────────
+
+    private void BuildMenu()
     {
-        var w = GetWindow();
-        w.FocusEntered += () => LogFocus("enter");
-        w.FocusExited += () =>
+        bool has = Core.RunState.HasSave();
+        var entries = new List<(string, string, System.Action)>();
+        if (has)
         {
-            LogFocus("exit  ← 丢焦瞬间");
-            // 丢焦时闪一次任务栏：明确"是外部抢焦点，不是游戏吞点击"
-            w.RequestAttention();
-        };
-        GD.Print("[focus] log at user://focus.log");
+            var where = Game.ChapterFlow.Label(Game.ChapterFlow.Next());
+            entries.Add(("继续　《" + where + "》　" + Core.RunState.Describe(), null,
+                () => Leave(Game.ChapterFlow.Next())));
+            entries.Add(("从头开始", null, null));   // null act=进确认页
+        }
+        else
+            entries.Add(("开始", null, () => Leave("res://scenes/ChPrologue.tscn")));
+        entries.Add(("退出", null, () => GetTree().Quit()));
 
-        // 运行期**绝不碰 OS 窗口尺寸**（真人反馈：点标题丢焦、之后点键全无——
-        //   切换场景时重设窗口大小是根因）。只复位渲染缓冲：项目里所有场景
-        //   统一 640×360 视口 + 1280×720 固定窗口；RPG 的宽视野靠相机 zoom 做。
-        GetWindow().ContentScaleSize = new Vector2I(ViewportWidth, ViewportHeight);
-
-        var bg0 = new ColorRect { Color = new Color(0f, 0f, 0f), MouseFilter = MouseFilterEnum.Ignore };
-        bg0.SetAnchorsPreset(LayoutPreset.FullRect);
-        AddChild(bg0);
-        // 标题画面：1280×720 用 Sprite2D 精确半倍铺满 640×360 视口。
-        //   不用 TextureRect：锚点预置在入树前 size 是 0，只露左上角（"显示不全"的根因）。
-        //   背景一律 MouseFilter=Ignore——Control 默认 Stop 会吞点击（"单击无反应"的根因）。
-        var titleTex = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
-        if (titleTex != null)
-            AddChild(new Sprite2D { Texture = titleTex, Centered = false, Scale = new Vector2(0.5f, 0.5f) });
-        _white = new ColorRect { Color = new Color(1, 1, 1, 0), MouseFilter = MouseFilterEnum.Ignore };
-        _white.SetAnchorsPreset(LayoutPreset.FullRect);
-        AddChild(_white);
-
-        var path = ProjectSettings.GetSetting("gui/theme/custom_font").AsString();
-
-
-        // ★ 槽位登记表：美术要做的只剩 6 张，其余全部程序生成。
-        //   这是 doc/美术需求.md 的机器可读版本，两边不一致时以代码为准。
-        Core.ProcGen.CachedFont = ThemeDB.FallbackFont;
-        if (ResourceLoader.Exists(path))
-            Core.ProcGen.CachedFont = ResourceLoader.Load<Font>(path);
-
-        Core.SlotRegistry.Install();
-        GD.Print(Core.SlotRegistry.Audit());
-
-        // 试取全部槽位，验证没有一张会返回 null，并看看 AssetIntake 修正了什么
-        foreach (var slot in Core.SlotRegistry.All)
-            _ = Core.AssetIntake.Get(slot.Key);
-        GD.Print(Core.AssetIntake.DumpReport());
-
-        // ★ 音频验收：交付了什么、超没超档、还缺哪几条（doc/音频岗需求.md 的机器版对账）
-        GD.Print(Core.AudioIndex.Audit());
-
-        // 标题曲——全篇唯一允许响音乐的地方。延后一拍：Audio 宿主节点自己也是 call_deferred 挂的树
-        Callable.From(Core.AudioIndex.PlayTitle).CallDeferred();
-
-        // 验收截图钩子：-- shot 存标题画面后退出
-        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "shot") >= 0)
-            _shotWait = 20;
-
-        // 端到端自测钩子：-- autostart 模拟 1.2 秒后点击标题
-        if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "autostart") >= 0)
-            _autoWait = 72;
-        GD.Print(ResourceLoader.Exists(path) ? $"[boot] 字体：{path.GetFile()}" : "[boot] 字体未加载！");
-        GD.Print("[boot] 点击画面开始（有存档=续章）；Shift+点击=清空重开");
-        if (Core.RunState.HasSave())
+        float y = has ? 262 : 262;
+        foreach (var (label, sub, act) in entries)
         {
-            var hintNew = new Label
+            var node = new Label
             {
-                Position = new Vector2(2, 338), Size = new Vector2(636, 20),
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Text = "Shift+点击 = 抹掉进度重新开始",
-                Modulate = new Color(1, 1, 1, 0.4f),
+                Position = new Vector2(0, y), Size = new Vector2(ViewportWidth, 26),
+                HorizontalAlignment = HorizontalAlignment.Center, Text = label,
             };
-            AddChild(hintNew);
+            var item = (node, act);
+            _items.Add(item);
+            AddChild(node);
+            if (sub != null)
+            {
+                var sl = new Label
+                {
+                    Position = new Vector2(0, y + 22), Size = new Vector2(ViewportWidth, 16),
+                    HorizontalAlignment = HorizontalAlignment.Center, Text = sub,
+                    Modulate = new Color(1, 1, 1, 0.45f),
+                };
+                AddChild(sl);
+                y += 16;
+            }
+            y += 46;
+        }
+        // "从头开始"固定挂到确认页（第二个条目，如果有档）
+        if (has)
+        {
+            var idx = _items.FindIndex(i => i.node.Text == "从头开始");
+            var prev = _items[idx];
+            _items[idx] = (prev.node, () => { _confirmFrom = Screen.Menu; _screen = Screen.ConfirmWipe; ShowConfirm(true); });
+        }
+        RefreshSel();
+
+        // 角落入口：账本 = 存档面板（世界观说法；右下角，低调但找得到）
+        _ledgerBtn = new Label
+        {
+            Position = new Vector2(560, 340), Size = new Vector2(72, 18),
+            HorizontalAlignment = HorizontalAlignment.Right, Text = "账本 ▸",
+            Modulate = new Color(1, 1, 1, 0.4f),
+        };
+        AddChild(_ledgerBtn);
+    }
+
+    private void OpenLedger()
+    {
+        _screen = Screen.Ledger;
+        foreach (var (node, _) in _items) node.Visible = false;
+        _ledgerBtn.Visible = false;
+        _ledgerPanel?.QueueFree();
+        _ledgerPanel = new Panel { Position = new Vector2(80, 40), Size = new Vector2(480, 280) };
+        var has = Core.RunState.HasSave();
+        var head = new Label { Position = new Vector2(20, 12), Size = new Vector2(440, 40), Text =
+            has ? "账本 · " + Core.RunState.Describe() + "\n现在翻到：" + Game.ChapterFlow.Label(Game.ChapterFlow.Next())
+                : "账本还是空的。" };
+        _ledgerPanel.AddChild(head);
+        if (has)
+        {
+            var st = Core.RunState.Load();
+            int shown = 0;
+            for (int i = st.Ledger.Count - 1; i >= 0 && shown < 5; i--, shown++)
+                _ledgerPanel.AddChild(new Label
+                {
+                    Position = new Vector2(20, 64 + shown * 20), Size = new Vector2(440, 18),
+                    Text = "· " + st.Ledger[i].Text,
+                    ClipText = true,
+                    Modulate = new Color(1, 1, 1, 0.8f),
+                });
+            if (st.Ledger.Count > 5)
+                _ledgerPanel.AddChild(new Label { Position = new Vector2(20, 64 + 5 * 20),
+                    Size = new Vector2(440, 18), Text = $"（前面还有 {st.Ledger.Count - 5} 行）",
+                    Modulate = new Color(1, 1, 1, 0.45f) });
+        }
+        var btnWipe = new Label { Position = new Vector2(20, 236), Size = new Vector2(200, 22),
+            Text = (_ledgerSel == 0 ? "▶ " : "　") + "合上账本（抹掉重来）" };
+        var btnClose = new Label { Position = new Vector2(250, 236), Size = new Vector2(120, 22),
+            Text = (_ledgerSel == 1 ? "▶ " : "　") + "◂ 回标题" };
+        btnWipe.Name = "wipe"; btnClose.Name = "close";
+        _ledgerPanel.AddChild(btnWipe); _ledgerPanel.AddChild(btnClose);
+        AddChild(_ledgerPanel);
+    }
+
+    private void CloseLedger()
+    {
+        _screen = Screen.Menu;
+        _ledgerPanel?.QueueFree();
+        BuildMenu();
+    }
+
+    private void ShowConfirm(bool on)
+    {
+        _confirm1 ??= new Label { Position = new Vector2(0, 232), Size = new Vector2(ViewportWidth, 26),
+            HorizontalAlignment = HorizontalAlignment.Center, Text = "账本上的每一行都要重抄一遍。确定合上它？" };
+        _confirm2 ??= new Label { Position = new Vector2(0, 258), Size = new Vector2(ViewportWidth, 20),
+            HorizontalAlignment = HorizontalAlignment.Center, Text = "Enter = 合上账本　　Esc = 不了",
+            Modulate = new Color(1, 1, 1, 0.6f) };
+        _confirm1.Visible = on; _confirm2.Visible = on;
+        AddChild(_confirm1); AddChild(_confirm2);
+        foreach (var (node, _) in _items) node.Visible = !on;
+        _ledgerBtn.Visible = !on && _screen != Screen.Ledger;
+        if (_ledgerPanel != null) _ledgerPanel.Visible = !on && _screen == Screen.Ledger;
+    }
+
+    private void RefreshSel()
+    {
+        for (int i = 0; i < _items.Count; i++)
+        {
+            var (node, _) = _items[i];
+            bool on = i == _sel;
+            node.Text = (on ? "▶ " : "　") + node.Text.TrimStart('▶', '　');
+            node.Modulate = on ? new Color(1, 1, 1, 1) : new Color(1, 1, 1, 0.55f);
+        }
+    }
+
+    private void ActivateSel()
+    {
+        var (_, act) = _items[_sel];
+        act?.Invoke();
+    }
+
+    // ── 输入 ────────────────────────────────────────────────────────────
+
+    public override void _Input(InputEvent e)
+    {
+        if (_leaving) return;
+
+        // 角落「账本」：Tab 或点右下角
+        if (_screen == Screen.Menu)
+        {
+            bool tab = e is InputEventKey tk && tk.Pressed && tk.Keycode == Key.Tab;
+            bool clickBtn = e is InputEventMouseButton lb && lb.Pressed &&
+                            _ledgerBtn.GetGlobalRect().HasPoint(lb.Position);
+            if (tab || clickBtn) { OpenLedger(); return; }
+        }
+        if (_screen == Screen.Ledger)
+        {
+            if (e.IsActionPressed("ui_left") || e.IsActionPressed("ui_up")) { _ledgerSel = 0; OpenLedger(); }
+            else if (e.IsActionPressed("ui_right") || e.IsActionPressed("ui_down")) { _ledgerSel = 1; OpenLedger(); }
+            else if (e is InputEventMouseButton cb && cb.Pressed && _ledgerPanel != null)
+            {
+                foreach (var ch in _ledgerPanel.GetChildren())
+                    if (ch is Label cl && cl.GetGlobalRect().HasPoint(cb.Position) && (cl.Name == "wipe" || cl.Name == "close"))
+                    { _ledgerSel = cl.Name == "wipe" ? 0 : 1; }
+                if (_ledgerSel == 1) { CloseLedger(); return; }
+                // 点在面板空白：不响应，防误删
+            }
+            else if (e.IsActionPressed("ui_accept"))
+            {
+                if (_ledgerSel == 1) CloseLedger();
+                else { _confirmFrom = Screen.Ledger; _screen = Screen.ConfirmWipe; ShowConfirm(true); }
+            }
+            else if (e.IsActionPressed("ui_cancel")) CloseLedger();
+            return;
+        }
+        if (_screen == Screen.ConfirmWipe)
+        {
+            if (e.IsActionPressed("ui_accept"))
+            {
+                Core.RunState.DeleteSave();
+                GD.Print("[title] 账本已合上，从头开始");
+                Leave("res://scenes/ChPrologue.tscn");
+            }
+            else if (e.IsActionPressed("ui_cancel"))
+            {
+                ShowConfirm(false);
+                if (_confirmFrom == Screen.Ledger) { _screen = Screen.Menu; OpenLedger(); }
+                else { _screen = Screen.Menu; BuildMenu(); }
+            }
+            return;
+        }
+
+        if (e is InputEventKey { Pressed: true } k)
+        {
+            if (k.Keycode == Key.Up || e.IsActionPressed("ui_up")) { _sel = (_sel + _items.Count - 1) % _items.Count; RefreshSel(); }
+            else if (k.Keycode == Key.Down || e.IsActionPressed("ui_down")) { _sel = (_sel + 1) % _items.Count; RefreshSel(); }
+            else if (k.Keycode == Key.N && _items[_sel].node.Text.Contains("从头")) { _screen = Screen.ConfirmWipe; ShowConfirm(true); }
+            else if (e.IsActionPressed("ui_accept") || k.Keycode == Key.Enter || k.Keycode == Key.Space) ActivateSel();
+            else if (e.IsActionPressed("ui_cancel")) GetTree().Quit();
+            return;
+        }
+
+        if (e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+        {
+            for (int i = 0; i < _items.Count; i++)
+                if (_items[i].node.GetGlobalRect().HasPoint(mb.Position))
+                {
+                    _sel = i; RefreshSel(); ActivateSel();
+                    return;
+                }
+            ActivateSel();   // 空白处点击 = 确认当前项（点击开始最直觉）
+        }
+    }
+
+    // ── 转场（碎裂→闪烁→白场→进章）────────────────────────────────────
+
+    private void Leave(string scenePath)
+    {
+        _leaving = true;
+        Core.AudioIndex.Sfx("sfx_stone_crack");
+        var tw = CreateTween();
+        float k = 0.06f;
+        for (int i = 0; i < 6; i++)
+        {
+            k *= 1.35f;
+            tw.TweenProperty(this, "modulate", new Color(1 + k, 1 - k * 1.4f, 1 - k * 1.4f), 0.05f);
+            tw.TweenProperty(this, "modulate", Colors.White, 0.05f);
+            tw.TweenProperty(this, "position", new Vector2(k * 42, -k * 30), 0.04f);
+            tw.TweenProperty(this, "position", Vector2.Zero, 0.04f);
+        }
+        tw.TweenProperty(_white, "color:a", 1f, 0.4f);
+        tw.TweenInterval(0.5);
+        tw.TweenCallback(Callable.From(() => GetTree().ChangeSceneToFile(scenePath)));
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_autoWait > 0 && --_autoWait == 0 && !_leaving)
+        {
+            GD.Print("[e2e] before window=" + GetWindow().Size);
+            ActivateSel();   // autostart 走菜单当前项（无档=开始）
+            _e2eTimer = GetTree().CreateTimer(8.0);
+            _e2eTimer.Timeout += () =>
+            {
+                var tree = (SceneTree)Engine.GetMainLoop();
+                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name);
+                tree.Quit();
+            };
+        }
+        if (_openLedgerFirst && _shotWait == 20) OpenLedger();
+        if (_shotWait > 0 && --_shotWait == 0)
+        {
+            if (_openLedgerFirst)
+            { GetViewport().GetTexture().GetImage().SavePng("res://data/gen/title_ledger.png"); GD.Print("[title] ledger shot"); GetTree().Quit(); return; }
+            GetViewport().GetTexture().GetImage().SavePng("res://data/gen/title_shot.png");
+            GD.Print("[title] shot 已存");
+            GetTree().Quit();
         }
     }
 }

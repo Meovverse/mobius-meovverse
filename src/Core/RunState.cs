@@ -93,6 +93,13 @@ public sealed class RunState
 
     // ── 账本 ────────────────────────────────────────────────────────────
 
+    /// <summary>存档格式版本。字段只加不减；读旧档靠默认值兜底。
+    /// v2 = 加元数据（本字段与 SavedAtTicks）。大改结构时才 +10。</summary>
+    public int SaveVersion { get; set; } = 2;
+
+    /// <summary>落盘时刻（Unix 秒），标题菜单显示"上次写账本是哪天"。</summary>
+    public long SavedAtTicks { get; set; }
+
     /// <summary>玩家抄进账本的每一行。账本的厚度就是进度。</summary>
     public List<LedgerLine> Ledger { get; set; } = new();
 
@@ -154,6 +161,7 @@ public sealed class RunState
 
     public void Save()
     {
+        SavedAtTicks = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         try
         {
             using var f = Godot.FileAccess.Open(SavePath, Godot.FileAccess.ModeFlags.Write);
@@ -191,6 +199,16 @@ public sealed class RunState
     }
 
     public static bool HasSave() => Godot.FileAccess.FileExists(SavePath);
+
+    /// <summary>标题菜单的"继续"副标题：账本几行、上次何时落笔。</summary>
+    public static string Describe()
+    {
+        var st = Load();
+        if (st.Flags.Count == 0 && st.Ledger.Count == 0) return "";
+        var when = DateTimeOffset.FromUnixTimeSeconds(st.SavedAtTicks).LocalDateTime;
+        var whenS = st.SavedAtTicks > 0 ? when.ToString("MM-dd HH:mm") : "?";
+        return $"账本 {st.Ledger.Count} 行 · 上次 {whenS}";
+    }
 
     public static void DeleteSave()
     {
