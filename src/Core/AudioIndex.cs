@@ -18,14 +18,16 @@ namespace MoShi.Core;
 /// </summary>
 public static class AudioIndex
 {
-    public enum Bus { Sfx, Ambience }
+    public enum Bus { Sfx, Ambience, Music }
 
     /// <summary>响度级别（峰值目标，dBFS）。</summary>
-    public enum Tier { S0, S1, S2, Amb }
+    public enum Tier { S0, S1, S2, Amb, Music }
 
     public static float TierPeak(Tier t) => t switch
     {
-        Tier.S0 => -20f, Tier.S1 => -14f, Tier.S2 => -8f, _ => -30f,
+        Tier.S0 => -20f, Tier.S1 => -14f, Tier.S2 => -8f,
+        Tier.Music => -16f,     // 标题曲专用，正文永不响
+        _ => -30f,
     };
 
     /// <param name="MeasuredPeak">导入实测峰值 dBFS；NaN = 未实测（不做播放端补偿）。</param>
@@ -46,6 +48,24 @@ public static class AudioIndex
             "★ 尾部约 1s 全静音、头部有能量——程序循环时会周期性'空一拍'，待音频岗确认是否导出尾巴"),
         new("amb_rain",         "res://assets/audio/amb_rain.ogg",         Bus.Ambience, Tier.Amb, -33.1f,
             "时长 12s（需求 25s），首尾差约 11dB，循环点听感待人耳验"),
+
+        // ── 第二批交付（15:13）。同时处理了冲突：对方把整批塞进 bgs/ 并用回 A 前缀，
+        //    与根目录规范名逐字节相同（md5 已对）→ 删重复；A12 上批是 80B 坏文件，
+        //    这批重交是真货（327KB）。bgm/Main Theme.wav 由老板拍板收编为标题曲，
+        //    见 title_theme。 ──
+        new("sfx_rub_blur",     "res://assets/audio/sfx_rub_blur.wav",     Bus.Sfx, Tier.S0, -8.4f,
+            "上批坏文件的重交版。超档 11.6dB；有效 0.17s（需求 0.5s 的'闷掉'衰减偏快，复听）"),
+        new("sfx_paper_place",  "res://assets/audio/sfx_paper_place.wav",  Bus.Sfx, Tier.S1, -4.8f,
+            "超档 9.2dB；单声道（其余是立体声，混着没事但记一笔）"),
+        new("sfx_paper_slide",  "res://assets/audio/sfx_paper_slide.wav",  Bus.Sfx, Tier.S1, -16.4f,
+            "响度达标。全长 1.97s、有效仅 0.34s——'摩擦的起点和停'的起点段疑似被掐，复听"),
+        new("sfx_page_turn",    "res://assets/audio/sfx_page_turn.wav",    Bus.Sfx, Tier.S1, -25.3f,
+            "★ 5.94s vs 需求 0.6s——多 take 连交了吧？需要音频岗裁一刀；峰值又偏轻。暂不接入播放"),
+        new("sfx_pen_write",    "res://assets/audio/sfx_pen_write.wav",    Bus.Sfx, Tier.S1, -22.9f,
+            "时长 1.18s 合理；偏轻 8.9dB（补偿只压不抬，等重导补齐）"),
+        new("title_theme",      "res://assets/audio/title_theme.ogg",      Bus.Music, Tier.Music, -18.8f,
+            "★ 标题画面专属——'全篇没有BGM'的唯一例外（2026-10-06 拍板）。" +
+            "源为 18.4MB 48kHz WAV，已重编码 192k vorbis（64s/1MB）；进游戏即停，正文永不响"),
     };
 
     // ── 需求全集（音频岗需求 §一~§四 + 分镜稿引用到的 ID）──缺谁，催谁 ──
@@ -85,7 +105,8 @@ public static class AudioIndex
     {
         if (_host != null && GodotObject.IsInstanceValid(_host)) return _host;
         _host = new Node { Name = "Audio" };
-        ((SceneTree)Engine.GetMainLoop()).Root.AddChild(_host);
+        // Boot._Ready 期间 Root 正在装配子节点，直接 AddChild 会炸；挂树必须推迟到本帧之后
+        ((SceneTree)Engine.GetMainLoop()).Root.AddChild(_host);   // 见 Boot：调用方须已出 _Ready（那里用 CallDeferred 调 PlayTitle）
 
         for (int i = 0; i < 8; i++)
         {
@@ -105,7 +126,7 @@ public static class AudioIndex
     private static string BusName(Bus b)
     {
         // 总线布局没装（跑单测/旧工程）时退回 Master，不炸。
-        var want = b == Bus.Sfx ? "SFX" : "Ambience";
+        var want = b switch { Bus.Sfx => "SFX", Bus.Music => "Music", _ => "Ambience" };
         return AudioServer.GetBusIndex(want) >= 0 ? want : "Master";
     }
 
@@ -179,6 +200,43 @@ public static class AudioIndex
 
     private static string _ambId;
     private static string CurrentAmb() => _ambId;
+
+    private static AudioStreamPlayer _music;
+
+    /// <summary>
+    /// 标题曲。'全篇没有 BGM'的唯一例外：只在标题画面响，循环。
+    /// 调用方（Boot）进游戏前必须 StopTitle —— 正文一旦开始，Music 总线就该空着。
+    /// </summary>
+    private static bool _titleOn;
+
+    public static void PlayTitle()
+    {
+        Host();
+        if (_music == null)
+        {
+            _music = new AudioStreamPlayer { Bus = BusName(Bus.Music) };
+            // ★ 循环走手动重触发，不开资源级 Loop：
+            //   ffmpeg 编的 vorbis 没有 VorbisMeta 的 LOOPSTART 元数据，
+            //   Godot 开环 seek 会越界刷 "page_cursor >= page_data.size"。
+            //   Finished 重播不依赖 seek 表，代价是循环点一声呼吸级间隙——标题画面无所谓。
+            _music.Finished += () => { if (_titleOn && GodotObject.IsInstanceValid(_music)) _music.Play(); };
+            _host.AddChild(_music);
+        }
+        var cue = Find("title_theme"); if (cue == null || _music.Playing) return;
+        _music.Stream = Load(cue.File);
+        _music.VolumeDb = GainDb(cue);
+        _titleOn = true;
+        _music.Play();
+    }
+
+    public static void StopTitle(float fadeSec = 1.2f)
+    {
+        _titleOn = false;
+        if (_music == null || !_music.Playing) return;
+        var tw = _music.CreateTween();
+        tw.TweenProperty(_music, "volume_db", -80f, fadeSec);
+        tw.TweenCallback(Callable.From(_music.Stop));
+    }
 
     /// <summary>停止环境音（黑屏/结局定格用）。</summary>
     public static void SilenceAmbience(float fadeSec = 2f)

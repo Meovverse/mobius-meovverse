@@ -17,7 +17,7 @@ namespace MoShi.Core;
 /// **两边不一致时，以这张表为准**（校验见 <see cref="Audit"/>）。
 ///
 /// 这个设计的直接后果：
-///   美术要做的图从 42 张降到 **7 张**，其余全部程序生成。
+///   美术要做的图从 42 张降到 **6 张**，其余全部程序生成。
 ///   而且美术就算交了图，尺寸/颜色/半透明不对，AssetIntake 也会就地修正。
 /// </summary>
 public static class SlotRegistry

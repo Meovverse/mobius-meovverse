@@ -59,7 +59,7 @@ public partial class Boot : Control
             ? $"字体已加载：{path.GetFile()}"
             : "字体未加载 —— 请把 fusion_pixel_12px.ttf 放到 assets/fonts/";
 
-        // ★ 槽位登记表：美术要做的只剩 7 张，其余全部程序生成。
+        // ★ 槽位登记表：美术要做的只剩 6 张，其余全部程序生成。
         //   这是 doc/美术需求.md 的机器可读版本，两边不一致时以代码为准。
         Core.ProcGen.CachedFont = ThemeDB.FallbackFont;
         if (ResourceLoader.Exists(path))
@@ -76,6 +76,8 @@ public partial class Boot : Control
         // ★ 音频验收：交付了什么、超没超档、还缺哪几条（doc/音频岗需求.md 的机器版对账）
         GD.Print(Core.AudioIndex.Audit());
 
+        // 标题曲——全篇唯一允许响音乐的地方。延后一拍：Audio 宿主节点自己也是 call_deferred 挂的树
+        Callable.From(Core.AudioIndex.PlayTitle).CallDeferred();
         hint.Text = "F3 = 资产对账";
     }
 }
