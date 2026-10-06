@@ -49,7 +49,7 @@ public partial class Boot : Control
         tw.TweenProperty(_white, "color:a", 1f, 0.4f);
         var tw2 = CreateTween();
         tw2.TweenCallback(Callable.From(() =>
-            GetTree().ChangeSceneToFile("res://scenes/RPGExplo.tscn")));
+            GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next())));
     }
 
     public override void _Ready()

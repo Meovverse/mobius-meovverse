@@ -407,7 +407,7 @@ public partial class RPGExplo : Node2D
                 var cl = new CanvasLayer(); cl.AddChild(_prompt); AddChild(cl);
             }
             if (Input.IsActionJustPressed("ui_accept"))
-                GetTree().ChangeSceneToFile("res://scenes/ChapterOne.tscn");
+                GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next());
         }
         if (_frame == 8 && !_free) Shot("rpg_start");
         if (_frame == 150 && !_free) Shot("rpg_mid");

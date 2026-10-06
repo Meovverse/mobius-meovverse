@@ -27,6 +27,7 @@ public partial class IntegrationTest : Node
         GD.Print("════════ 集成测试 ════════");
         TestAssetsAndAudio();
         await TestChapterOneFlow();
+        await SmokeChapters();
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
         GetTree().Quit(_fail > 0 ? 1 : 0);
     }
@@ -43,6 +44,21 @@ public partial class IntegrationTest : Node
             Check(ResourceLoader.Exists(c.File), $"音频在库：{c.Id}");
         Check(AudioIndex.Missing().Count == 8,
             $"缺 8 条（实 {AudioIndex.Missing().Count}）：" + string.Join(" ", AudioIndex.Missing()));
+    }
+
+    async System.Threading.Tasks.Task SmokeChapters()
+    {
+        // 章节场景烟测：加载 + 跑 60 帧不出脚本错误即过（错误由 Godot 打 ERROR 行，
+        // 这里只保证不崩；崩溃级会直接抛出）。
+        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn" })
+        {
+            // 直接实例化场景根（.tscn 的脚本在 StorySceneBase 下）
+            var inst = GD.Load<PackedScene>(scn).Instantiate();
+            AddChild(inst);
+            for (int i = 0; i < 60; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Check(GodotObject.IsInstanceValid(inst), $"烟测：{scn.GetFile()}");
+            inst.QueueFree();
+        }
     }
 
     async System.Threading.Tasks.Task TestChapterOneFlow()

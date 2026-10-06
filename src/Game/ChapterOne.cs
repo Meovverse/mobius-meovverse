@@ -214,10 +214,7 @@ public partial class ChapterOne : Node2D
         else // Ended
         {
             if (Input.IsActionJustPressed("ui_accept"))
-            {
-                if (_endingOne) GetTree().ChangeSceneToFile("res://scenes/Boot.tscn");
-                else GetTree().ChangeSceneToFile("res://scenes/RPGExplo.tscn");
-            }
+                GetTree().ChangeSceneToFile(_endingOne ? "res://scenes/Boot.tscn" : ChapterFlow.Next());
         }
 
         _renderAcc += dt;
@@ -304,7 +301,7 @@ public partial class ChapterOne : Node2D
         _save.SetChoice(1, 'A');
         _save.Ledger.Add(new LedgerLine { Text = "「16」底下磨掉过什么。刻痕还是我的，字不是了。" });
         _save.Save();
-        _hint.Text = ""; _tip.Text = "线索 01 · 碑面「16」存在磨痕。\n按 Enter 回墓道。";
+        _hint.Text = ""; _tip.Text = "线索 01 · 碑面「16」存在磨痕。\n按 Enter。";
         _phase = Phase.Ended;
     }
 
