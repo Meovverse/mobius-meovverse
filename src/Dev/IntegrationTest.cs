@@ -78,11 +78,27 @@ public partial class IntegrationTest : Node
         Check(armed, "第七章：资料卡出现（2 张）");
         if (armed)
         {
-            c7.TestClickDoc(0);   // 开口问「韩梅呢？」
+            // 结构断言：整棵树里不许有"全屏级、MouseFilter=Stop"的控件——
+            // 那正是 Black() 吞光点击的 bug 类（Citrate#20）。
+            int eater = CountFullscreenClickEater(c7);
+            Check(eater == 0, $"无全屏吞点击控件（实测 {eater} 个）");
+            c7.TestClickDoc(0);
             for (int f = 0; f < 5; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            Check(RunState.Load().Has(RunState.Flag.AskedHanmei), "第七章：点卡片触发后续（asked_hanmei 落盘）");
+            Check(RunState.Load().Has(RunState.Flag.AskedHanmei), "第七章：点资料卡触发后续（asked_hanmei 落盘）");
         }
         c7.QueueFree();
+    }
+
+    static int CountFullscreenClickEater(Node n)
+    {
+        int c = 0;
+        if (n is Control ctl && ctl.Visible && ctl.MouseFilter == Control.MouseFilterEnum.Stop)
+        {
+            var r = ctl.GetGlobalRect();
+            if (r.Size.X >= 600 && r.Size.Y >= 300) c++;   // 全屏级
+        }
+        foreach (var ch in n.GetChildren()) c += CountFullscreenClickEater(ch);
+        return c;
     }
 
     async System.Threading.Tasks.Task SmokeChapters()

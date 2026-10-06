@@ -28,7 +28,8 @@ public partial class EndingCard : Node2D
                                  MouseFilter = Control.MouseFilterEnum.Ignore };
         var t = L(118, Title, 26, 1f); t.HorizontalAlignment = HorizontalAlignment.Center; t.Size = new Vector2(640, 40);
         var th = L(176, Theme, 15, 0.85f); th.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        th.Size = new Vector2(520, 60); th.Position = new Vector2(60, 176);
+        th.Size = new Vector2(560, 70); th.Position = new Vector2(40, 176);
+        th.HorizontalAlignment = HorizontalAlignment.Center;   // #21：主题句居中
         var f = L(316, (Foot.Length > 0 ? Foot + "\n" : "") + "按 Enter 回封面 —— 账本还在，随时可以从头翻起。", 12, 0.55f);
         f.HorizontalAlignment = HorizontalAlignment.Center; f.Size = new Vector2(640, 40);
         AddChild(_white);

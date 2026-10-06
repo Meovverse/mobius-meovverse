@@ -94,7 +94,7 @@ public partial class Boot : Control
         for (int i = 0; i < 6; i++)
         {
             k *= 1.35f;
-            tw.TweenProperty(this, "modulate", new Color(1 + k, 1 - k * 1.4f, 1 - k * 1.4f), 0.05f);
+            tw.TweenProperty(this, "modulate", new Color(1f + k * 0.6f, 1f + k * 0.6f, 1f + k * 0.6f), 0.05f);   // #18 红闪→白闪
             tw.TweenProperty(this, "modulate", Colors.White, 0.05f);
             tw.TweenProperty(this, "position", new Vector2(k * 42, -k * 30), 0.04f);
             tw.TweenProperty(this, "position", Vector2.Zero, 0.04f);

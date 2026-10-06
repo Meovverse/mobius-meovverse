@@ -35,6 +35,7 @@ public partial class StorySceneBase : Node2D
         Ui.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(Ui);
         _subBg = new ColorRect { Color = new Color(0, 0, 0, 0.65f), Visible = false,
+                                 MouseFilter = Control.MouseFilterEnum.Ignore,
                                  Position = new Vector2(0, VH - 54), Size = new Vector2(VW, 54) };
         _sub = new Label { Position = new Vector2(16, 10), Size = new Vector2(VW - 32, 36),
                            AutowrapMode = TextServer.AutowrapMode.WordSmart,
@@ -89,8 +90,12 @@ public partial class StorySceneBase : Node2D
     /// <summary>纯色遮幅/黑场。</summary>
     protected ColorRect Black(float alpha = 1f)
     {
-        // 1：盖住所有图版（z=0），Ui 在 z=10 不受影响
-        var c = new ColorRect { Color = new Color(0, 0, 0, alpha), Size = new Vector2(VW, VH), ZIndex = 1 };
+        // 1：盖住所有图版（z=0），Ui 在 z=10 不受影响。
+        // ★ MouseFilter=Ignore 必须：ColorRect 默认 Stop，会把整屏的鼠标事件
+        //   全吃掉——凡是调了 Black() 的章节（序章/第七章/第十/十三章）鼠标就
+        //   全废，资料卡点不动正是这个原因（Citrate#20）。
+        var c = new ColorRect { Color = new Color(0, 0, 0, alpha), Size = new Vector2(VW, VH), ZIndex = 1,
+                                MouseFilter = Control.MouseFilterEnum.Ignore };
         AddChild(c);
         return c;
     }
@@ -295,7 +300,13 @@ public partial class StorySceneBase : Node2D
                 BorderColor = new Color(0.62f, 0.58f, 0.5f, 0.5f) };
             foreach (var side in new[] { Side.Left, Side.Right, Side.Top, Side.Bottom }) sb.SetBorderWidth(side, 1);
             var card = new Panel { Position = new Vector2(24 + i * (cw + gap), y), Size = new Vector2(cw, ch),
-                MouseFilter = Control.MouseFilterEnum.Ignore };
+                MouseFilter = Control.MouseFilterEnum.Stop };   // 控件直接吃点击（Citrate#20）
+            int ci = i;
+            card.GuiInput += ev =>
+            {
+                if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+                { PickDoc(ci); }
+            };
             card.AddThemeStyleboxOverride("panel", sb);
             // #14：标题长于卡宽会溢出——自动换行 + 裁切兜底
             var tl = new Label { Position = new Vector2(10, 8), Size = new Vector2(cw - 20, 34),
@@ -312,7 +323,7 @@ public partial class StorySceneBase : Node2D
             _docs.Add(new Doc { Root = card, Sb = sb, Box = new Rect2(24 + i * (cw + gap), y, cw, ch), Pick = docs[i].pick });
         }
         _inputHandler = OnDocInput;
-        if (_choiceHint != null) _choiceHint.Text = hint + "　（←→ 选 · Enter 确认 · 或直接点卡片）";
+        if (_choiceHint != null) _choiceHint.Text = hint + "　【点卡片，或 ←→ 选 + Enter 确认】";
     }
 
     private int _docSel;

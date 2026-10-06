@@ -11,7 +11,7 @@ public partial class Ch07 : StorySceneBase
         Plate("bg_title_shopfront");
         var night = Black(0.45f);
         Raw("res://assets/textures/char_suhang.png", new Vector2(452, 128), 236);   // 苏航立在门口，脚落在柜台前
-        var env = Raw("res://assets/textures/prop_envelope_closed.png", new Vector2(300, 250));
+        var env = Raw("res://assets/textures/prop_envelope_closed.png", new Vector2(320, 150));   // #19：上移，别被对话框压住
         if (env != null) env.Scale = Vector2.One * 0.35f;
 
         Dialogue(new[]
