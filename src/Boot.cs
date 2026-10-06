@@ -73,6 +73,9 @@ public partial class Boot : Control
             _ = Core.AssetIntake.Get(slot.Key);
         GD.Print(Core.AssetIntake.DumpReport());
 
+        // ★ 音频验收：交付了什么、超没超档、还缺哪几条（doc/音频岗需求.md 的机器版对账）
+        GD.Print(Core.AudioIndex.Audit());
+
         hint.Text = "F3 = 资产对账";
     }
 }
