@@ -37,7 +37,7 @@ public partial class IntegrationTest : Node
         TestFlowRouting();
         TestTitleClick();
         await TestPrologueClicks();
-        await TestChapterOneFlow();
+        await TestCh01Flow();
         await TestDocChoiceFlow();
         await SmokeChapters();
         RunState.DeleteSave();   // 清的是 test 档
@@ -134,7 +134,7 @@ public partial class IntegrationTest : Node
         RunState.DeleteSave();
         Check(ChapterFlow.Next().EndsWith("ChPrologue.tscn"), "路由：新档 → 序章");
         var s = new RunState(); s.Set(RunState.Flag.Clue16); s.Save();
-        Check(ChapterFlow.Next().EndsWith("ChapterOne.tscn"), "路由：有序章 → 一章");
+        Check(ChapterFlow.Next().EndsWith("Ch01.tscn"), "路由：有序章 → 一章");
         s = RunState.Load(); s.Set(RunState.Flag.Clue01); s.Set(RunState.Flag.StoneAltered); s.Save();
         Check(ChapterFlow.Next().EndsWith("Ch02.tscn"), "路由：有一章 → 二章");
         // 直接推到终章
@@ -200,25 +200,25 @@ public partial class IntegrationTest : Node
         return c;
     }
 
-    async System.Threading.Tasks.Task TestChapterOneFlow()
+    async System.Threading.Tasks.Task TestCh01Flow()
     {
         // ── A 路：擦 → 露 → 描 → clue_01 + 落盘可回读 ──
         RunState.DeleteSave();
-        var scene = new ChapterOne();
+        var scene = new Ch01();
         AddChild(scene);
         scene.SetProcess(false);   // 钩子驱动，禁真实 _Process 竞争
         for (int i = 0; i < 200 && !scene.TestReady; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         for (int i = 0; i < 200 && !scene.TestReady; i++)
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        Check(scene.TestReady, "ChapterOne 构建（碑面/笔画就绪）headless 可用");
-        Check(scene.TestPhase == ChapterOne.Phase.Wiping, "初始阶段=Wiping");
+        Check(scene.TestReady, "Ch01 构建（碑面/笔画就绪）headless 可用");
+        Check(scene.TestPhase == Ch01.Phase.Wiping, "初始阶段=Wiping");
 
         scene.Test_WipeDate();
         var hud = MenuHud.Instance;
         for (int f = 0; f < 4; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);   // 等延迟挂树
         Check(hud != null && hud.Visible && hud.IsInsideTree() && hud.TestBackVisible && hud.TestChapterText.Contains("第一章"),
               $"HUD 就位且已挂树（「{hud?.TestChapterText}」+返回按钮）");   // Citrate#5/#6/#23
-        Check(scene.TestPhase == ChapterOne.Phase.Choice, "擦净日期区 → 解锁 Choice");
+        Check(scene.TestPhase == Ch01.Phase.Choice, "擦净日期区 → 解锁 Choice");
 
         // Natsume 回归：进-出-进，进度只增不减
         var ctr = new Vector2(373, 277);
@@ -245,7 +245,7 @@ public partial class IntegrationTest : Node
 
         // ── 擦过头：物理后果（不可逆）──
         RunState.DeleteSave();
-        var s2 = new ChapterOne();
+        var s2 = new Ch01();
         AddChild(s2); s2.SetProcess(false);
         for (int i = 0; i < 200 && !s2.TestReady; i++)
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
@@ -255,7 +255,7 @@ public partial class IntegrationTest : Node
 
         // ── C 路：结局一判定 ──
         RunState.DeleteSave();
-        var s3 = new ChapterOne();
+        var s3 = new Ch01();
         AddChild(s3); s3.SetProcess(false);
         for (int i = 0; i < 200 && !s3.TestReady; i++)
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);

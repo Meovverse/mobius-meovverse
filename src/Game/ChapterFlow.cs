@@ -16,7 +16,7 @@ public static class ChapterFlow
     public static string Label(string scenePath)
     {
         if (scenePath.EndsWith("ChPrologue.tscn")) return "序章 · 石头不会撒谎";
-        if (scenePath.EndsWith("ChapterOne.tscn")) return "第一章 · 碑上的名字";
+        if (scenePath.EndsWith("Ch01.tscn")) return "第一章 · 碑上的名字";
         if (scenePath.EndsWith("Ch02.tscn")) return "第二章 · 查档";
         if (scenePath.EndsWith("Ch03.tscn")) return "第三章 · 两个日期";
         if (scenePath.EndsWith("Ch04.tscn")) return "第四章 · 韩梅";
@@ -37,7 +37,7 @@ public static class ChapterFlow
     {
         var s = RunState.Load();
         if (!s.Has(RunState.Flag.Clue16)) return "res://scenes/ChPrologue.tscn";
-        if (!s.Has(RunState.Flag.StoneAltered) && !s.Has(RunState.Flag.Clue02)) return "res://scenes/ChapterOne.tscn";
+        if (!s.Has(RunState.Flag.StoneAltered) && !s.Has(RunState.Flag.Clue02)) return "res://scenes/Ch01.tscn";
         if (!s.Has(RunState.Flag.Clue05) && s.GetChoice(2) != 'C') return "res://scenes/Ch02.tscn";
         if (!s.Has(RunState.Flag.Clue06)) return "res://scenes/Ch03.tscn";
         if (!s.Has(RunState.Flag.Clue10)) return "res://scenes/Ch04.tscn";

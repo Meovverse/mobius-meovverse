@@ -15,7 +15,7 @@ namespace MoShi.Game;
 ///   擦过头的不可逆、描的进度、磨痕的位置，一个都不从画面反推。
 ///   这里唯一的"画面"就是那份数据的可视化，所以所见即所判。
 /// </summary>
-public partial class ChapterOne : Node2D
+public partial class Ch01 : Node2D
 {
     public enum Phase { Wiping, Choice, Ended }
 
