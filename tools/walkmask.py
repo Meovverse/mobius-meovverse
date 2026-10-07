@@ -12,8 +12,9 @@ RpgWalk 优先读它（没有才回退到颜色分类）。
 障碍矩形就是"家具/墙/陈列"的外接框，逐个减掉。
 """
 import sys, os
+from collections import deque
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEX = os.path.join(ROOT, "assets", "textures")
@@ -63,8 +64,40 @@ def gen(name, radius, obstacles):
     mi = (mi.filter(ImageFilter.MaxFilter(radius)).filter(ImageFilter.MinFilter(radius))
             .filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3)))
     m = np.asarray(mi) > 128
+    # ★ 填内部**小**孔：颜色分类会在开阔地板里留下零散的非可走小坑（Citrate#40/#42）。
+    #   从图边缘洪泛非可走区，未被边缘触及的=内部孔；**只填小孔**（大块留作墙/家具/陈列）。
+    #   顺序：先填孔、再减障碍矩形，否则会把家具矩形也填回去。
+    h, w = m.shape
+    nw = Image.fromarray(((~m) * 255).astype("uint8"))
+    for seed in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1),
+                 (w // 2, 0), (w // 2, h - 1), (0, h // 2), (w - 1, h // 2)):
+        if nw.getpixel(seed) == 255:
+            ImageDraw.floodfill(nw, seed, 128)
+    holes = np.asarray(nw) == 255
+    MAX_HOLE = 12000
+    visited = np.zeros_like(holes)
+    filled = 0
+    for y in range(h):
+        for x in range(w):
+            if not holes[y, x] or visited[y, x]:
+                continue
+            comp, dq = [], deque([(x, y)])
+            visited[y, x] = True
+            while dq:
+                cx, cy = dq.popleft()
+                comp.append((cx, cy))
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = cx + dx, cy + dy
+                    if 0 <= nx < w and 0 <= ny < h and holes[ny, nx] and not visited[ny, nx]:
+                        visited[ny, nx] = True
+                        dq.append((nx, ny))
+            if len(comp) <= MAX_HOLE:
+                for cx, cy in comp:
+                    m[cy, cx] = True
+                filled += 1
     for x0, y0, x1, y1 in obstacles:
         m[max(0, y0):y1, max(0, x0):x1] = False
+    print(f"{name}: 可走 {m.mean()*100:.1f}%（填了小孔 {filled} 个）")
     os.makedirs(OUT, exist_ok=True)
     Image.fromarray((m * 255).astype("uint8")).save(os.path.join(OUT, f"walk_{name}.png"))
     ov = a.copy()

@@ -108,7 +108,9 @@ public partial class RPGExplo : Node2D
         // 之前，实测菱形被整张地图盖掉。8×8 冷白菱形，一张小 Image 解决。
         // Citrate657#3：一颗小白菱形不够——玩家在路上根本注意不到。
         // 信标柱（半透亮柱+地面脉冲环）+ 章名浮标，全程可见；越肩提示保留。
-        _marker = new Beacon { Position = Goal + new Vector2(0, -8), ZIndex = 29 };
+        // ★ Citrate#39：信标原来立在碑上(Goal)，但玩家能站的触发点在 GoalStand，
+        //   两者差 ~60px——玩家走进光圈按 Enter 却没反应。信标改立到**触发点**上。
+        _marker = new Beacon { Position = GoalStand + new Vector2(0, -4), ZIndex = 29 };
         AddChild(_marker);
         _beaconTag = new Label
         {
@@ -410,14 +412,14 @@ public partial class RPGExplo : Node2D
             Mathf.Clamp(_pos.Y, View.Y / 2f, _mh - View.Y / 2f));
         _camOwner.Position = _camOwner.Position.Lerp(target, 1f - Mathf.Exp(-9f * (float)delta));
 
-        var screen = GetCanvasTransform() * (Goal + new Vector2(0, 12));   // 柱脚下方，不压开场卡
+        var screen = GetCanvasTransform() * (GoalStand + new Vector2(0, 12));   // 触发点上方，不压开场卡
         if (_beaconTag != null)
         {
             _beaconTag.Position = screen - new Vector2(_beaconTag.GetSize().X / 2f, 0);
             _beaconTag.Visible = screen.Y > -30 && screen.Y < 700;
         }
         // 走到碑前（或自动抵达）→ Enter 切特写。M2 的第一条接缝。
-        bool near = (_pos - GoalStand).Length() < 26f;
+        bool near = (_pos - GoalStand).Length() < 34f;   // #39：放宽到 34，站在光圈里必触发
         if (near || _arrived)
         {
             if (_prompt == null)
