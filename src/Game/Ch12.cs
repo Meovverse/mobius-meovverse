@@ -17,7 +17,7 @@ public partial class Ch12 : StorySceneBase
     protected override void SceneReady()
     {
         Plate("bg_cemetery_qingming");
-        HoldStart("amb_graveyard");
+        Ambient("amb_graveyard");
         Raw("res://assets/textures/char_luyun_back.png", new Vector2(320, 260));
         _hud = new Label { Position = new Vector2(200, 320), Size = new Vector2(280, 30),
                            Text = "Enter：凿" };
@@ -52,7 +52,6 @@ public partial class Ch12 : StorySceneBase
 
     private void Reveal()
     {
-        HoldStop();
         Sfx("sfx_base_crack");
         var card = new Panel { Position = new Vector2(150, 80), Size = new Vector2(340, 150), MouseFilter = Control.MouseFilterEnum.Ignore };
         card.AddChild(new Label { Position = new Vector2(20, 14), Text =

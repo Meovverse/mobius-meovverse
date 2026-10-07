@@ -47,6 +47,7 @@ public partial class Ch01 : Node2D
     {
         MenuHud.Ensure(GetTree(), "第一章 · 碑上的名字", true);
         _save = RunState.Load();
+        AudioIndex.Ambience("amb_graveyard");   // 碑前仍在墓园（承接墓园走动段）
 
         var fontPath = ProjectSettings.GetSetting("gui/theme/custom_font").AsString();
         var font = ResourceLoader.Exists(fontPath) ? ResourceLoader.Load<Font>(fontPath) : ThemeDB.FallbackFont;

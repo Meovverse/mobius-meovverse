@@ -10,6 +10,7 @@ public partial class Ch05 : StorySceneBase
     protected override void SceneReady()
     {
         Plate("bg_archive_room");
+        Ambient("amb_archive");
         var a = new Panel { Position = new Vector2(90, 60), Size = new Vector2(200, 150), MouseFilter = Control.MouseFilterEnum.Ignore };
         a.AddChild(new Label { Position = new Vector2(16, 12), Text = "韩湘\n状态：死亡\n（多年前）" });
         var b = new Panel { Position = new Vector2(350, 60), Size = new Vector2(200, 150), MouseFilter = Control.MouseFilterEnum.Ignore };

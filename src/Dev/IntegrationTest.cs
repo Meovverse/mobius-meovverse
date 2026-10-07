@@ -59,8 +59,8 @@ public partial class IntegrationTest : Node
 
         foreach (var c in AudioIndex.Delivered)
             Check(ResourceLoader.Exists(c.File), $"音频在库：{c.Id}");
-        Check(AudioIndex.Missing().Count == 8,
-            $"缺 8 条（实 {AudioIndex.Missing().Count}）：" + string.Join(" ", AudioIndex.Missing()));
+        Check(AudioIndex.Missing().Count == 4,
+            $"缺 4 条（实 {AudioIndex.Missing().Count}）：" + string.Join(" ", AudioIndex.Missing()));
     }
 
     async System.Threading.Tasks.Task TestDocChoiceFlow()
