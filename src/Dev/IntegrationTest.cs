@@ -39,6 +39,7 @@ public partial class IntegrationTest : Node
         await TestPrologueClicks();
         await TestCh01Flow();
         await TestDocChoiceFlow();
+        await TestIdentitySwapRoute();
         await SmokeChapters();
         RunState.DeleteSave();   // 清的是 test 档
         GD.Print($"════════ 结果：{_pass} 过 / {_fail} 挂 ════════");
@@ -87,6 +88,41 @@ public partial class IntegrationTest : Node
             Check(RunState.Load().Has(RunState.Flag.AskedHanmei), "第七章：点资料卡触发后续（asked_hanmei 落盘）");
         }
         c7.QueueFree();
+    }
+
+    async System.Threading.Tasks.Task TestIdentitySwapRoute()
+    {
+        // 真结局前提②「发现身份异常」：第五章 A 必须落 identity_swap——
+        // 否则 TrueEndingReady 恒假、第十三章被判回标题，真结局永远走不到。
+        RunState.DeleteSave();
+        var c5 = new Ch05();
+        AddChild(c5);
+        bool armed = false;
+        for (int i = 0; i < 60 && !armed; i++)
+        {
+            c5.TestAdvance();
+            for (int f = 0; f < 25; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            armed = c5.TestDocCount == 3;
+        }
+        Check(armed, "第五章：资料卡出现（3 张）");
+        if (armed)
+        {
+            c5.TestClickDoc(0);   // A：韩湘的死亡证明 ↔ 失踪时间
+            for (int f = 0; f < 5; f++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var s = RunState.Load();
+            Check(s.Has(RunState.Flag.Clue13), "第五章 A → clue_13 落盘（推进项）");
+            Check(s.Has(RunState.Flag.IdentitySwap), "第五章 A → identity_swap 落盘（真结局前提②）");
+        }
+        c5.QueueFree();
+
+        // 真结局判定 = 碑面异常 + 身份异常 + 未收钱 + 固定证据
+        var t = new RunState();
+        t.Set(RunState.Flag.Clue16); t.Set(RunState.Flag.StoneAltered); t.Set(RunState.Flag.IdentitySwap);
+        t.Set(RunState.Flag.EvidenceFixed); t.Save();
+        Check(RunState.Load().TrueEndingReady, "四条件齐 → TrueEndingReady 成立");
+        var t2 = RunState.Load(); t2.Set(RunState.Flag.MoneyTaken); t2.Save();
+        Check(!RunState.Load().TrueEndingReady, "收过钱 → 真结局不成立");
+        RunState.DeleteSave();
     }
 
     static int CountFullscreenClickEater(Node n)

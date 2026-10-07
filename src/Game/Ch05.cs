@@ -16,7 +16,12 @@ public partial class Ch05 : StorySceneBase
         b.AddChild(new Label { Position = new Vector2(16, 12), Text = "韩梅\n状态：失踪\n2006 年" });
         Ui.AddChild(a); Ui.AddChild(b);
 
-        Subs(() => Subs(Gate,
+        Subs(() => Subs(() =>
+        {
+            // 剧本 §1 结局表：四章选 C（放弃韩梅线）→ 到第五章触发结局二判定。
+            if (Save.EndingTwoFired) { End2(); return; }
+            Gate();
+        },
             "档案里冒出一个名字：韩湘——苏航早已去世的妹妹。",
             "可是\"韩湘\"的身份信息，在韩梅失踪之后重新出现过。",
             "旧身份证明、死亡资料、社会关系——被拿来处理本应属于韩梅的事情。",
@@ -38,6 +43,10 @@ public partial class Ch05 : StorySceneBase
         Save.SetChoice(5, 'A');
         Clue(RunState.Flag.Clue13, "韩湘死于韩梅失踪之前。");
         Clue(RunState.Flag.Clue17, "死亡证明：日期是真的。人是早年就没了的。");
+        // ★ 真结局前提②「发现身份异常」：以前这里漏设 identity_swap，
+        //   导致 TrueEndingReady 永远为假、第十三章被判回标题（真结局走不到）。
+        Save.Set(RunState.Flag.IdentitySwap);
+        Save.Save();
         Go("死亡证明的日期，比韩梅失踪早得多。死人没法自己失踪。");
     }
     private void B()
@@ -50,9 +59,13 @@ public partial class Ch05 : StorySceneBase
     private void C()
     {
         Save.SetChoice(5, 'C'); Save.Save();
+        End2();
+    }
+
+    /// <summary>结局二 · 被隐藏的身份（四章 C 或五章 C 都走这里）。</summary>
+    private void End2() =>
         EndingCard.Open(GetTree(), "结局二 · 被隐藏的身份",
             "最危险的伪造，不是造一个假人，而是让一个死人替活人承担身份。");
-    }
     private void Go(string line) =>
         Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（回墓道。）");
 }
