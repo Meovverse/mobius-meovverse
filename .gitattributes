@@ -1,2 +1,21 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# 二进制资产：强制按二进制处理，别让 text=auto 把它们误判成文本、
+# 提交时"规范换行"把字节改坏（PNG/音频/视频/字体/Godot .import 指向的源文件）。
+*.png  -text
+*.jpg  -text
+*.jpeg -text
+*.ico  -text
+*.svg  -text
+*.otf  -text
+*.ttf  -text
+*.wav  -text
+*.ogg  -text
+*.mp3  -text
+*.ogv  -text
+*.mp4  -text
+*.tres -text
+*.res  -text
+*.ctex -text
+*.uid  text eol=lf
