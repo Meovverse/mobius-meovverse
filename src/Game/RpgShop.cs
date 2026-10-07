@@ -10,10 +10,10 @@ public partial class RpgShop : RpgWalk
     protected override Vector2 SpawnWorld => new(240, 420);
     protected override string[] Guidance => new[]
     {
-        "方向键走动　　走到「▼ 摊开这些纸」前，按 Enter",
+        "方向键走动　　走到「▼ 到工作台前」按 Enter",
     };
     protected override RpgTarget[] Targets => new[]
     {
-        new RpgTarget("摊开这些纸", new Vector2(650, 650), "res://scenes/Ch03.tscn"),
+        new RpgTarget("到工作台前", new Vector2(650, 650), ChapterFlow.NextContent()),
     };
 }

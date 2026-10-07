@@ -97,16 +97,30 @@ public partial class RpgWalk : Node2D
         var bl = new CanvasLayer(); bl.AddChild(_banner); AddChild(bl);
     }
 
-    // ── 可走面：颜色分类 + 四脚探针（脚占位压到非路面就拒）─────────────
+    // ── 可走面：优先读离线碰撞掩码（data/gen/walk_<map>.png），没有才按颜色分类 ──
     void BuildMask()
     {
+        string baseName = System.IO.Path.GetFileNameWithoutExtension(MapPath);
+        string maskPath = "res://data/gen/walk_" + baseName + ".png";
         var walk = new bool[_mw * _mh];
-        for (int y = 0; y < _mh; y++)
-        for (int x = 0; x < _mw; x++)
+        var maskTex = ResourceLoader.Exists(maskPath) ? ResourceLoader.Load<Texture2D>(maskPath) : null;
+        if (maskTex != null)
         {
-            var c = _map.GetPixel(x, y);
-            walk[y * _mw + x] = WalkablePixel((int)(c.R * 255), (int)(c.G * 255), (int)(c.B * 255));
+            var mi = maskTex.GetImage(); mi.Convert(Image.Format.Rgb8);
+            if (mi.GetWidth() == _mw && mi.GetHeight() == _mh)
+                for (int y = 0; y < _mh; y++)
+                for (int x = 0; x < _mw; x++)
+                    walk[y * _mw + x] = mi.GetPixel(x, y).R > 0.5f;
+            else maskTex = null;
         }
+        if (maskTex == null)   // 回退：颜色分类
+            for (int y = 0; y < _mh; y++)
+            for (int x = 0; x < _mw; x++)
+            {
+                var c = _map.GetPixel(x, y);
+                walk[y * _mw + x] = WalkablePixel((int)(c.R * 255), (int)(c.G * 255), (int)(c.B * 255));
+            }
+
         _safe = new bool[_mw * _mh];
         for (int y = 3; y < _mh - 3; y++)
         for (int x = 4; x < _mw - 4; x++)
@@ -158,9 +172,10 @@ public partial class RpgWalk : Node2D
         else _player.Texture = _frames[_face, 0];
         _player.Position = _pos;
 
+        // 相机：地图比视野大就跟随夹边，比视野小就居中（档案室裁剪版就比视野小）
         var target = new Vector2(
-            Mathf.Clamp(_pos.X, View.X / 2f, _mw - View.X / 2f),
-            Mathf.Clamp(_pos.Y, View.Y / 2f, _mh - View.Y / 2f));
+            _mw <= View.X ? _mw / 2f : Mathf.Clamp(_pos.X, View.X / 2f, _mw - View.X / 2f),
+            _mh <= View.Y ? _mh / 2f : Mathf.Clamp(_pos.Y, View.Y / 2f, _mh - View.Y / 2f));
         _camOwner.Position = _camOwner.Position.Lerp(target, 1f - Mathf.Exp(-9f * (float)delta));
 
         // 目标标签跟屏幕

@@ -14,6 +14,6 @@ public partial class RpgOffice : RpgWalk
     };
     protected override RpgTarget[] Targets => new[]
     {
-        new RpgTarget("打开墓园系统", new Vector2(500, 520), "res://scenes/Ch02.tscn"),
+        new RpgTarget("打开墓园系统", new Vector2(500, 520), ChapterFlow.NextContent()),
     };
 }
