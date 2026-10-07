@@ -37,10 +37,14 @@ public partial class StorySceneBase : Node2D
         _subBg = new ColorRect { Color = new Color(0, 0, 0, 0.65f), Visible = false,
                                  MouseFilter = Control.MouseFilterEnum.Ignore,
                                  Position = new Vector2(0, VH - 54), Size = new Vector2(VW, 54) };
-        _sub = new Label { Position = new Vector2(16, 10), Size = new Vector2(VW - 32, 36),
-                           AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                           HorizontalAlignment = HorizontalAlignment.Center };
+        // ★ 直接给 Label 设 Size 会被引擎撑到内容宽 → 换行失效（Citrate#49 长句溢出）。
+        //   改成锚在字幕条里（父级定宽），Arbitrary 才真的断行。
+        _sub = new Label { AutowrapMode = TextServer.AutowrapMode.Arbitrary,
+                           HorizontalAlignment = HorizontalAlignment.Center,
+                           VerticalAlignment = VerticalAlignment.Center };
         _subBg.AddChild(_sub);
+        _sub.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _sub.OffsetLeft = 8; _sub.OffsetRight = -8; _sub.OffsetTop = 4; _sub.OffsetBottom = -4;
         Ui.AddChild(_subBg);
         ArmShot();
         // 取自己的场景路径（代码实例化时为空 → 用类名兜底，测试里也能断言到章名）
