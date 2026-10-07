@@ -249,10 +249,10 @@ public static class SlotRegistry
             null, false, "[code] 程序用字体渲染 + 一道斜划");
 
         // ── G UI：程序绘制，不用贴图 ──
-        Add("ui_cursor_hand", 64, 79, AssetIntake.Kind.Pixel, 12, true,
-            null, false, "★ 美术已交付：手形光标（点击查看）。之前是程序占位");
-        Add("ui_loupe_ring", 64, 64, AssetIntake.Kind.Pixel, 12, true,
-            null, false, "★ 美术已交付：放大镜。'看'动词的核心 UI");
+        Add("ui_cursor_hand", 49, 68, AssetIntake.Kind.Pixel, 12, true,
+            null, false, "★ 手形光标（Ch01 擦碑示范手）。2026-10-07 与 ui_loupe_ring 对调了内容");
+        Add("ui_loupe_ring", 64, 79, AssetIntake.Kind.Pixel, 12, true,
+            null, false, "★ 放大镜（'看'动词的核心 UI）。2026-10-07 与 ui_cursor_hand 对调了内容");
         Add("ui_caliper", 480, 32, AssetIntake.Kind.Pixel, 8, false,
             null, false, "[code] 程序画，刻度线要对齐像素格");
         Add("ui_paper_sheet", 256, 320, AssetIntake.Kind.Pixel, 10, false,
