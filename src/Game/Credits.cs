@@ -22,7 +22,7 @@ public partial class Credits : Node2D
         var vs = ResourceLoader.Load<VideoStream>("res://assets/videos/Ending.ogv");
         if (vs != null)
         {
-            _video = new VideoStreamPlayer { Stream = vs, Expand = true,
+            _video = new VideoStreamPlayer { Stream = vs, Expand = true, MouseFilter = Control.MouseFilterEnum.Ignore,
                                              Position = Vector2.Zero, Size = new Vector2(640, 360) };
             AddChild(_video);
             _video.Play();
@@ -48,15 +48,27 @@ public partial class Credits : Node2D
                              Modulate = new Color(1, 1, 1, 0.5f) });
     }
 
+    private bool _gone;
+
+    // Citrate#50：用事件式 _Input 跳过，比逐帧轮询可靠（GUI/视频控件吞不吞都拦不住 _Input）。
+    public override void _Input(InputEvent e)
+    {
+        if (_gone || _t < 0.4f) return;
+        if (e is InputEventKey { Pressed: true } || e is InputEventMouseButton { Pressed: true }
+            || e is InputEventJoypadButton { Pressed: true } || e.IsActionPressed("ui_accept"))
+            Go();
+    }
+
     public override void _Process(double dt)
     {
         _t += (float)dt;
-        bool finished = _video == null || !_video.IsPlaying();
-        if (finished || _t > 120f) { Go(); return; }
-        // 1s 之后允许跳过（避开进场那一刻的残留按键）
-        if (_t > 1f && (Input.IsActionJustPressed("ui_accept") || Input.IsActionJustPressed("ui_cancel")
-                        || Input.IsAnythingPressed())) Go();
+        if (_video == null || !_video.IsPlaying() || _t > 300f) Go();
     }
 
-    private void Go() => GetTree().ChangeSceneToFile("res://scenes/Boot.tscn");
+    private void Go()
+    {
+        if (_gone) return;
+        _gone = true;
+        GetTree().ChangeSceneToFile("res://scenes/Boot.tscn");
+    }
 }

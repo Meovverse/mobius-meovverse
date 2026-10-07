@@ -37,10 +37,14 @@ public partial class StorySceneBase : Node2D
         _subBg = new ColorRect { Color = new Color(0, 0, 0, 0.65f), Visible = false,
                                  MouseFilter = Control.MouseFilterEnum.Ignore,
                                  Position = new Vector2(0, VH - 54), Size = new Vector2(VW, 54) };
-        _sub = new Label { Position = new Vector2(16, 10), Size = new Vector2(VW - 32, 36),
-                           AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                           HorizontalAlignment = HorizontalAlignment.Center };
+        // ★ 直接给 Label 设 Size 会被引擎撑到内容宽 → 换行失效（Citrate#49 长句溢出）。
+        //   改成锚在字幕条里（父级定宽），并在 NextSub 里**手工按禁则断行**（#51）。
+        _sub = new Label { AutowrapMode = TextServer.AutowrapMode.Off,
+                           HorizontalAlignment = HorizontalAlignment.Center,
+                           VerticalAlignment = VerticalAlignment.Center };
         _subBg.AddChild(_sub);
+        _sub.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _sub.OffsetLeft = 8; _sub.OffsetRight = -8; _sub.OffsetTop = 4; _sub.OffsetBottom = -4;
         Ui.AddChild(_subBg);
         ArmShot();
         // 取自己的场景路径（代码实例化时为空 → 用类名兜底，测试里也能断言到章名）
@@ -126,9 +130,40 @@ public partial class StorySceneBase : Node2D
             d?.Invoke();
             return;
         }
-        _sub.Text = _subs.Dequeue();
+        _sub.Text = WrapCjk(_subs.Dequeue());
         _subBg.Visible = true;
         _subTimer = 0;
+    }
+
+    /// <summary>CJK 禁则断行：按像素宽贪心换行；行首不允许出现收尾标点（。，、）」等），
+    /// 遇到就并回上一行——避免像 Citrate#51 那样"最后一行只剩一个句号"。</summary>
+    private string WrapCjk(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        const float maxW = 624f;
+        var font = _sub.GetThemeFont("font") ?? ThemeDB.FallbackFont;
+        int sz = _sub.GetThemeFontSize("font_size");
+        var lines = new System.Collections.Generic.List<string>();
+        var cur = new System.Text.StringBuilder(); float w = 0;
+        foreach (char ch in s)
+        {
+            if (ch == '\n') { lines.Add(cur.ToString()); cur.Clear(); w = 0; continue; }
+            float cw = font.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, sz).X;
+            if (w + cw > maxW && cur.Length > 0) { lines.Add(cur.ToString()); cur.Clear(); w = 0; }
+            cur.Append(ch); w += cw;
+        }
+        if (cur.Length > 0) lines.Add(cur.ToString());
+        const string noStart = "。，、．！？：；）」』】》〉”’…—";
+        for (int i = 1; i < lines.Count; i++)
+        {
+            while (lines[i].Length > 0 && noStart.IndexOf(lines[i][0]) >= 0)
+            {
+                lines[i - 1] += lines[i][0];
+                lines[i] = lines[i].Substring(1);
+            }
+            if (lines[i].Length == 0) { lines.RemoveAt(i); i--; }
+        }
+        return string.Join("\n", lines);
     }
 
     /// <summary>系统静默：字幕只在停留够久或点击后推进，绝不自动跳红字。</summary>
