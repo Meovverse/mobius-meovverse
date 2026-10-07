@@ -1,0 +1,62 @@
+using Godot;
+using MoShi.Core;
+
+namespace MoShi.Game;
+
+/// <summary>
+/// 通关后的制作人员名单：播 assets/videos/Ending.ogv（由美术交付的 Ending.mp4 转码，
+/// Godot 只认 Ogg Theora），背景音乐 assets/audio/ending_theme.mp3。
+/// 放完、按任意键、或超时都回封面——不会卡死。
+/// </summary>
+public partial class Credits : Node2D
+{
+    private VideoStreamPlayer _video;
+    private float _t;
+
+    public override void _Ready()
+    {
+        MenuHud.Ensure(GetTree(), null, false);   // 名单页不带返回钮（HUD 常驻 Root，得显式隐藏）
+        AddChild(new ColorRect { Color = new Color(0, 0, 0), Size = new Vector2(640, 360),
+                                 MouseFilter = Control.MouseFilterEnum.Ignore });
+
+        var vs = ResourceLoader.Load<VideoStream>("res://assets/videos/Ending.ogv");
+        if (vs != null)
+        {
+            _video = new VideoStreamPlayer { Stream = vs, Expand = true,
+                                             Position = Vector2.Zero, Size = new Vector2(640, 360) };
+            AddChild(_video);
+            _video.Play();
+        }
+        else
+        {
+            AddChild(new Label { Text = "（制作人员名单视频缺失）", Position = new Vector2(0, 170),
+                                 Size = new Vector2(640, 20), HorizontalAlignment = HorizontalAlignment.Center });
+        }
+
+        // 背景音乐（视频本身无音轨；BGM 单独给，循环）
+        var m = ResourceLoader.Load<AudioStream>("res://assets/audio/ending_theme.mp3");
+        if (m != null)
+        {
+            if (m is AudioStreamMP3 mp3) mp3.Loop = true;
+            var mu = new AudioStreamPlayer { Stream = m, VolumeDb = -4 };
+            AddChild(mu);
+            mu.Play();
+        }
+
+        AddChild(new Label { Text = "按任意键跳过", Position = new Vector2(0, 334),
+                             Size = new Vector2(616, 18), HorizontalAlignment = HorizontalAlignment.Right,
+                             Modulate = new Color(1, 1, 1, 0.5f) });
+    }
+
+    public override void _Process(double dt)
+    {
+        _t += (float)dt;
+        bool finished = _video == null || !_video.IsPlaying();
+        if (finished || _t > 120f) { Go(); return; }
+        // 1s 之后允许跳过（避开进场那一刻的残留按键）
+        if (_t > 1f && (Input.IsActionJustPressed("ui_accept") || Input.IsActionJustPressed("ui_cancel")
+                        || Input.IsAnythingPressed())) Go();
+    }
+
+    private void Go() => GetTree().ChangeSceneToFile("res://scenes/Boot.tscn");
+}

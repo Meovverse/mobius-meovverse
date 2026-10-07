@@ -11,13 +11,17 @@ public partial class SceneShot : Node
 {
     private int _frame;
     private bool _done;
+    private int _target = 12;
 
     public override void _Ready()
     {
         DirAccess.MakeDirRecursiveAbsolute(ProjectSettings.GlobalizePath("res://data/gen/"));
         string scene = "res://scenes/Ch09.tscn";
         foreach (var a in OS.GetCmdlineUserArgs())
+        {
             if (a.StartsWith("scene=")) scene = a["scene=".Length..];
+            else if (a.StartsWith("frames=")) int.TryParse(a["frames=".Length..], out _target);
+        }
 
         var ps = ResourceLoader.Load<PackedScene>(scene);
         if (ps == null) { GD.PrintErr($"[shot] 找不到场景：{scene}"); GetTree().Quit(1); return; }
@@ -33,7 +37,7 @@ public partial class SceneShot : Node
     public override void _Process(double delta)
     {
         if (_done) return;
-        if (++_frame < 12) return;
+        if (++_frame < _target) return;
         _done = true;
         GetViewport().GetTexture().GetImage().SavePng("res://data/gen/scene_shot.png");
         GD.Print("[shot] data/gen/scene_shot.png 已存");

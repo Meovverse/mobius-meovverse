@@ -46,8 +46,8 @@ public partial class Ch09 : StorySceneBase
 
         // #31：红点**错落有致**地落在信纸本体上（不再笔直两列）；六个选项的
         // 视觉位置与"正确先后"**打乱**——你在屏幕上按内容判断，而不是按位置顺序。
-        float[] dotX   = { 232, 398, 270, 360, 218, 420 };
-        float[] dotY   = { 120,  88, 210, 158, 272, 250 };
+        float[] dotX   = { 232, 398, 270, 360, 256, 386 };
+        float[] dotY   = { 120,  88, 210, 158, 266, 260 };
         float[] labelY = {  96,  90, 178, 176, 262, 268 };
         int[]   perm   = { 2, 5, 0, 3, 1, 4 };   // 槽位 → 事情索引（乱序）
 
@@ -73,7 +73,9 @@ public partial class Ch09 : StorySceneBase
             //   明显），换行与对齐全部失效——盒子才是可靠的宽度约束。
             float tw = right ? outX - elbowX - 6 : elbowX - outX - 4;
             float tx = right ? elbowX + 4 : outX;
-            var box = new Control { Position = new Vector2(tx, lineY - 54), Size = new Vector2(tw, 52),
+            // #32：盒子加高、底边抬到水平线上方 6px——选中后前缀加"N　"会让文本
+            // 多折一行，原来盒矮（52）＋底边贴线，末字会被顶到线下方。
+            var box = new Control { Position = new Vector2(tx, lineY - 68), Size = new Vector2(tw, 62),
                                     MouseFilter = Control.MouseFilterEnum.Stop };
             var lb = new Label
             {
@@ -94,7 +96,7 @@ public partial class Ch09 : StorySceneBase
             _cards.Add((lb, idx));
         }
 
-        _hint2 = new Label { Position = new Vector2(16, 6), Size = new Vector2(608, 18),
+        _hint2 = new Label { Position = new Vector2(16, 0), Size = new Vector2(608, 18),
                              HorizontalAlignment = HorizontalAlignment.Center };
         _hint2.AddThemeColorOverride("font_color", new Color(0.45f, 0.35f, 0.22f));
         _hint2.AddThemeColorOverride("font_shadow_color", new Color(0.98f, 0.96f, 0.88f, 0.5f));

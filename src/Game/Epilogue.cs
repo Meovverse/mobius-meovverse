@@ -22,7 +22,7 @@ public partial class Epilogue : StorySceneBase
     {
         Sfx("sfx_pen_write");
         Save.Set("epilogue_done"); Save.Save();
-        Subs(() => Subs(() => GetTree().ChangeSceneToFile("res://scenes/Boot.tscn"),
+        Subs(() => Subs(() => GetTree().ChangeSceneToFile("res://scenes/Credits.tscn"),
             "窗外天快黑了。门边立着一块新碑，字还没刻完。",
             "旧登记本，仍在他手边。"),
             "材料日期。刻字日期。他把本子合上。");

@@ -9,16 +9,15 @@ public partial class Ch11 : StorySceneBase
     protected override void SceneReady()
     {
         Plate("bg_shop_front");
-        Gate();
-        Subs(null, "东西都齐了。怎么把它变成\"证据\"？");
+        Subs(Gate, "东西都齐了。怎么把它变成\"证据\"？");
     }
 
-    private void Gate() => Choices(new System.Collections.Generic.List<(Rect2, string, System.Action)>
-    {
-        (new Rect2(60, 250, 160, 60), "整套交警方，原件留手里", A),
-        (new Rect2(250, 250, 140, 60), "先发到网上", B),
-        (new Rect2(420, 250, 140, 60), "自己去找苏航", C),
-    }, null);
+    // #33：原来用 Choices（隐形热区）——玩家看不到任何可点的东西，必然卡住。
+    // 改成可见的资料卡（同其余章节），并有明确的问句指引。
+    private void Gate() => DocChoices("证据怎么用，才既是真相、又拿得出手？",
+        ("整套交警方，原件留手里", "把复印件交出去，能对得上的原件自己收着", A),
+        ("先发到网上", "让所有人先看见，再谈别的", B),
+        ("自己去找苏航", "当面摊牌，逼他给个说法", C));
 
     private void A()
     {
