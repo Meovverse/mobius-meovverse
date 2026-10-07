@@ -8,7 +8,9 @@ public partial class Ch13 : StorySceneBase
 {
     protected override void SceneReady()
     {
-        Black();
+        // 同上：真结局文字卡也垫墓园 A 区定景（压暗），不空黑
+        Plate("bg_graveyard_area_A");
+        Black(0.86f);
         var s = RunState.Load();
         if (!s.TrueEndingReady)   // 兜底路由：条件不齐不该走到这
         {

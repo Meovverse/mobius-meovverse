@@ -24,7 +24,7 @@ public partial class RPGExplo : Node2D
     // 项目的 1280×720——运行期不改窗口大小（失焦 bug 的根因，见 Boot 同款注释）。
     static readonly Vector2 View = new(960, 540);
     const float Speed = 70f;               // 地图像素/秒
-    static readonly Vector2 Spawn = new(480, 300);      // 中央十字路
+    static readonly Vector2 Spawn = new(480, 630);      // 界面下端·墓园入口（Citrate#55：从入口进园）
     static readonly Vector2 Goal = new(295, 62);        // A 区 7 号：左上围栏里那排碑的高碑（当初抠 stele_bg 的同源）
     static readonly Vector2 GoalStand = new(240, 101);  // 碑前最近的路点（围栏外的横向小径）
 

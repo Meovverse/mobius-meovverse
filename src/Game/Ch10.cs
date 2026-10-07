@@ -7,7 +7,9 @@ public partial class Ch10 : StorySceneBase
 {
     protected override void SceneReady()
     {
-        Black();
+        // 没有真背景的黑场文字卡：垫一张墓园 A 区定景压暗当底（美术素材复用，别空着）
+        Plate("bg_graveyard_area_A");
+        Black(0.86f);
         Subs(() =>
         {
             // ★ Natsume#9：这一章原来没落 ch10_done，导致 NextContent() 永远判定"还没过第十章"
