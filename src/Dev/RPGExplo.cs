@@ -362,6 +362,21 @@ public partial class RPGExplo : Node2D
 
     bool CanStand(Vector2 p) => Safe(p);
 
+    /// <summary>轴分离移动 + **角补偿**：主方向走不动时，横向/纵向错开一两像素再试。
+    /// 路沿那点抖动凹口不再把角色"卡住"（Citrate#43/#52）。</summary>
+    Vector2 Slide(Vector2 from, Vector2 delta, bool alongX)
+    {
+        if (delta == Vector2.Zero) return from;
+        var to = from + delta;
+        if (CanStand(to)) return to;
+        foreach (int o in new[] { 2, -2, 4, -4, 6, -6 })
+        {
+            var c = alongX ? new Vector2(to.X, to.Y + o) : new Vector2(to.X + o, to.Y);
+            if (CanStand(c)) return c;
+        }
+        return from;
+    }
+
     List<Vector2> BFS(Vector2 a, Vector2 b)
     {
         var parent = new int[_mw * _mh]; Array.Fill(parent, -1);
@@ -426,10 +441,9 @@ public partial class RPGExplo : Node2D
         if (v != Vector2.Zero && _arrived != true)
         {
             float dt = (float)delta;
-            var nx = _pos + new Vector2(v.X, 0) * Speed * dt;
-            if (CanStand(nx)) _pos = nx;
-            var ny = _pos + new Vector2(0, v.Y) * Speed * dt;
-            if (CanStand(ny)) _pos = ny;
+            float step = Speed * dt;
+            _pos = Slide(_pos, new Vector2(v.X, 0) * step, true);
+            _pos = Slide(_pos, new Vector2(0, v.Y) * step, false);
         }
 
         if (v != Vector2.Zero)

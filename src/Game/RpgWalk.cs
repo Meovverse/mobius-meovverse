@@ -137,6 +137,20 @@ public partial class RpgWalk : Node2D
     bool Safe(Vector2 p) =>
         p.X >= 0 && p.Y >= 0 && p.X < _mw && p.Y < _mh && _safe[Mathf.RoundToInt(p.Y) * _mw + Mathf.RoundToInt(p.X)];
 
+    /// <summary>轴分离移动 + 角补偿：走不动时错开一两像素再试，路沿凹口不卡人（Citrate#38/#52）。</summary>
+    private Vector2 Slide(Vector2 from, Vector2 delta, bool alongX)
+    {
+        if (delta == Vector2.Zero) return from;
+        var to = from + delta;
+        if (Safe(to)) return to;
+        foreach (int o in new[] { 2, -2, 4, -4, 6, -6 })
+        {
+            var c = alongX ? new Vector2(to.X, to.Y + o) : new Vector2(to.X + o, to.Y);
+            if (Safe(c)) return c;
+        }
+        return from;
+    }
+
     Vector2 NearestSafe(Vector2 p)
     {
         if (Safe(p)) return p;
@@ -163,10 +177,8 @@ public partial class RpgWalk : Node2D
         if (v != Vector2.Zero)
         {
             var dt = (float)delta;
-            var nx = _pos + new Vector2(v.X, 0) * Speed * dt;
-            if (Safe(nx)) _pos = nx;
-            var ny = _pos + new Vector2(0, v.Y) * Speed * dt;
-            if (Safe(ny)) _pos = ny;
+            _pos = Slide(_pos, new Vector2(v.X, 0) * Speed * dt, true);
+            _pos = Slide(_pos, new Vector2(0, v.Y) * Speed * dt, false);
             _face = Math.Abs(v.X) > Math.Abs(v.Y) ? (v.X < 0 ? 2 : 3) : (v.Y < 0 ? 0 : 1);
             _anim += (float)delta * 8f;
             _player.Texture = _frames[_face, ((int)_anim) % 2];
