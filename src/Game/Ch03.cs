@@ -9,16 +9,17 @@ public partial class Ch03 : StorySceneBase
 {
     protected override void SceneReady()
     {
-        Plate("bg_shop_front");
-        var table = new Panel { Position = new Vector2(60, 30), Size = new Vector2(520, 210), MouseFilter = Control.MouseFilterEnum.Ignore };
-        table.AddChild(new Label { Position = new Vector2(20, 12), Text =
-            "来源              日期\n" +
-            "墓碑              2006-05-16\n" +
-            "墓园系统          2006-05-17\n" +
-            "老吴登记本        2006-05-17\n" +
-            "医院原始记录      2006-05-17\n" +
-            "殡仪馆记录        2006-05-17" });
-        Ui.AddChild(table);
+        // 美术交付 `ch03_clues.png`（1920×1080，16:9）：自带背景 + 五个来源的日期。
+        // 原来程序摆的底图/文本框/日期文字全部取消，直接满屏铺 640×360（1/3）。
+        var clues = ResourceLoader.Load<Texture2D>("res://assets/textures/ch03_clues.png");
+        if (clues != null)
+        {
+            // 收在**底部资料卡之上**（卡带 y=250..340）——五个日期全程可见，不被选项挡住。
+            float k = 248f / clues.GetHeight();
+            AddChild(new Sprite2D { Texture = clues, Centered = true,
+                Position = new Vector2(VW / 2f, 124), Scale = new Vector2(k, k) });
+        }
+        else Plate("bg_shop_front");   // 缺图兜底
 
         Subs(() => Subs(Gate,
             "五个来源。四个日期是十七。",
