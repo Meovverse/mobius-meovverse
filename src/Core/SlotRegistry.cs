@@ -192,7 +192,7 @@ public static class SlotRegistry
             () => null!, false, "铺子俯视整图（P1 五场共用）。左侧/底部紫底区是碑样品陈列，接入前裁掉；"
             + "暖棕地板可走、石堆/家具为障碍（分类采样已过，与办公室排同款碰撞层接入）");
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgOffice(640, 360), true, "★ 木纹 + CRT 打光；俯视整图 map_office 已入库");
+            () => Art.BgOffice(640, 360), false, "★ 已交付（2026-10-07，2368×1760→接管层缩到 640×360）：二章查档特写用它");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgArchive(640, 360), true, "★ 几百个格架；俯视整图 map_archive 已入库");
         Add("bg_shop_front", 640, 360, AssetIntake.Kind.Background, 16, false,
