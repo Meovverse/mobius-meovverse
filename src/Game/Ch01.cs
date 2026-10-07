@@ -148,6 +148,8 @@ public partial class Ch01 : Node2D
         if (_traceBreakCooldown > 0) _traceBreakCooldown -= (float)delta;   // 闸门独立于早退守卫
         if (_brushPileCooldown > 0) _brushPileCooldown -= (float)delta;
         if (!_ready || _sixteen == null && _phase != Phase.Wiping) return;   // 构建未完成时别跑分支逻辑
+        // #8：任何与当前 phase 不符的残留按住循环，一律停掉（防跨阶段/跨场漏音）。
+        if ((_wipeHold && _phase != Phase.Wiping) || (_traceHold && _phase != Phase.Choice)) StopHolds();
         var dt = (float)delta;
         var m = GetGlobalMousePosition();
 

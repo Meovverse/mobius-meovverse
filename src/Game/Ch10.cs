@@ -8,7 +8,13 @@ public partial class Ch10 : StorySceneBase
     protected override void SceneReady()
     {
         Black();
-        Subs(() => GetTree().ChangeSceneToFile("res://scenes/Ch11.tscn"),
+        Subs(() =>
+        {
+            // ★ Natsume#9：这一章原来没落 ch10_done，导致 NextContent() 永远判定"还没过第十章"
+            //   → 十一章选对之后又被送回第十章。补上完成标志。
+            Save.Set("ch10_done"); Save.Save();
+            GetTree().ChangeSceneToFile("res://scenes/Ch11.tscn");
+        },
             "苏航的公司欠下巨额债务。他提前为母亲买了高额保险，然后设计了一场事故。",
             "苏兰不是死于意外。真正的死亡日期是 2006 年 5 月 17 日——老吴照这个日期刻了碑。",
             "为了让保险材料成立，日期被改成 5 月 16 日。碑上的「17」被磨掉，重刻成「16」。",
