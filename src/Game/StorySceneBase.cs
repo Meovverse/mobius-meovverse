@@ -168,7 +168,7 @@ public partial class StorySceneBase : Node2D
                                      StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                                      MouseFilter = Control.MouseFilterEnum.Ignore };
         TestFace = face;
-        var txt = new RichTextLabel { Position = new Vector2(150, 12), Size = new Vector2(VW - 168, 92),
+        var txt = new RichTextLabel { Position = new Vector2(150, 22), Size = new Vector2(VW - 168, 84),
                                       BbcodeEnabled = true, Text = "", MouseFilter = Control.MouseFilterEnum.Ignore };
         panel.AddChild(face); panel.AddChild(txt);
         Ui.AddChild(panel);
@@ -197,8 +197,9 @@ public partial class StorySceneBase : Node2D
             // 人物才有头像；旁白不占位（正文左移，不留空框）
             face.Texture = who == "wu" ? faceWu : who == "su" ? faceSu : null;
             face.Visible = face.Texture != null;
-            txt.Position = new Vector2(face.Visible ? 150 : 24, 12);
-            txt.Size = new Vector2(VW - (face.Visible ? 168 : 48), 92);
+            // #29：正文别贴着对话框上缘，留出上边距（框高 116）
+            txt.Position = new Vector2(face.Visible ? 150 : 24, 22);
+            txt.Size = new Vector2(VW - (face.Visible ? 168 : 48), 84);
             // #15：人物对话框是浅底（黄/白），文字必须用墨色；旁白是灰底用亮字。
             bool lightBox = who != "";
             txt.AddThemeColorOverride("default_color",
@@ -272,9 +273,24 @@ public partial class StorySceneBase : Node2D
     }
 
     // ── 资料卡选择（#3#4#5：纯文字罗列+隐形热区 = 玩家不知道该点哪）────
-    private sealed class Doc { public Panel Root; public StyleBoxFlat Sb; public Rect2 Box; public Action Pick; }
+    private sealed class Doc { public Panel Root; public StyleBoxFlat Sb; public Rect2 Box; public Action Pick; public Label Title; public ColorRect Mark; }
     private readonly System.Collections.Generic.List<Doc> _docs = new();
     private Label _choiceHint;
+
+    /// <summary>把一段文本放进"固定尺寸 Control 盒 + Label 锚满"里——直接给 Label
+    /// 设 Size 会被引擎撑到内容宽（含空格/数字的行尤甚），换行/裁切全失效
+    /// （Citrate#26/#28）；中文无空格，断行必须用 Arbitrary。</summary>
+    private static Label BoxLabel(Control parent, Vector2 pos, Vector2 size, string text, int fontSize, Color? col = null)
+    {
+        var box = new Control { Position = pos, Size = size, MouseFilter = Control.MouseFilterEnum.Ignore };
+        var lb = new Label { Text = text, AutowrapMode = TextServer.AutowrapMode.Arbitrary };
+        lb.AddThemeFontSizeOverride("font_size", fontSize);
+        lb.AddThemeColorOverride("font_color", col ?? new Color(0.92f, 0.9f, 0.86f));
+        box.AddChild(lb);
+        lb.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        parent.AddChild(box);
+        return lb;
+    }
 
     /// <summary>把分支画成桌上的资料：每份一张纸卡（标题+一句"做什么"），
     /// 悬停微微提亮，点击即选。选择前桌上就摆着这些——点哪里一目了然。</summary>
@@ -291,13 +307,15 @@ public partial class StorySceneBase : Node2D
         _choiceHint.Text = hint;
 
         int n = docs.Length; float gap = 12f, w = 640f - 48 - gap * (n - 1);
-        // 上移到 166..290：不压底部字幕条（306 起），也不挡中景
-        float cw = w / n, y = 166, ch = 124;
+        // #26：卡片挪到**最底部一条带**（250..340）。中景剧情文本（Ch03 日期表、
+        // Ch05 两份档案…）大多到 y≈240 止；而选卡时底部字幕条已隐藏，正好占用——
+        // 谁都不挡。卡身压矮（90 高），标题/副句各自换行、绝不裁字。
+        float cw = w / n, y = 250, ch = 90;
         _docSel = 0;
         for (int i = 0; i < n; i++)
         {
-            var sb = new StyleBoxFlat { BgColor = new Color(0.145f, 0.14f, 0.135f, 0.97f),
-                BorderColor = new Color(0.62f, 0.58f, 0.5f, 0.5f) };
+            var sb = new StyleBoxFlat { BgColor = new Color(0.13f, 0.125f, 0.12f, 0.96f),
+                BorderColor = new Color(0.45f, 0.41f, 0.34f, 0.45f) };
             foreach (var side in new[] { Side.Left, Side.Right, Side.Top, Side.Bottom }) sb.SetBorderWidth(side, 1);
             var card = new Panel { Position = new Vector2(24 + i * (cw + gap), y), Size = new Vector2(cw, ch),
                 MouseFilter = Control.MouseFilterEnum.Stop };   // 控件直接吃点击（Citrate#20）
@@ -308,19 +326,14 @@ public partial class StorySceneBase : Node2D
                 { PickDoc(ci); }
             };
             card.AddThemeStyleboxOverride("panel", sb);
-            // #14：标题长于卡宽会溢出——自动换行 + 裁切兜底
-            var tl = new Label { Position = new Vector2(10, 8), Size = new Vector2(cw - 20, 34),
-                Text = docs[i].title, AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                ClipText = true };
-            card.AddChild(tl);
-            card.AddChild(new Label { Position = new Vector2(10, 44), Size = new Vector2(cw - 20, ch - 54),
-                Text = docs[i].sub, AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                Modulate = new Color(1, 1, 1, 0.55f) });
-            // 纸屑感：左上角一道浅色"纸边"
-            card.AddChild(new ColorRect { Color = new Color(0.72f, 0.68f, 0.55f, 0.16f),
-                Position = new Vector2(0, 0), Size = new Vector2(cw, 4) });
+            var tl = BoxLabel(card, new Vector2(10, 6), new Vector2(cw - 20, 30), docs[i].title, 13);
+            BoxLabel(card, new Vector2(10, 38), new Vector2(cw - 20, ch - 46), docs[i].sub, 11, new Color(1, 1, 1, 0.6f));
+            // #27：选中态——顶部一道亮条（默认隐藏，DocHover 里按选中点亮）
+            var mark = new ColorRect { Position = new Vector2(0, 0), Size = new Vector2(cw, 3), Color = new Color(0, 0, 0, 0) };
+            card.AddChild(mark);
             Ui.AddChild(card);
-            _docs.Add(new Doc { Root = card, Sb = sb, Box = new Rect2(24 + i * (cw + gap), y, cw, ch), Pick = docs[i].pick });
+            _docs.Add(new Doc { Root = card, Sb = sb, Box = new Rect2(24 + i * (cw + gap), y, cw, ch), Pick = docs[i].pick,
+                                Title = tl, Mark = mark });
         }
         _inputHandler = OnDocInput;
         if (_choiceHint != null) _choiceHint.Text = hint + "　【点卡片，或 ←→ 选 + Enter 确认】";
@@ -350,7 +363,7 @@ public partial class StorySceneBase : Node2D
         if (_choiceHint != null) _choiceHint.Text = "";
     }
 
-    /// <summary>悬停提亮（每帧一次鼠标位，成本可忽略）。</summary>
+    /// <summary>悬停提亮 + 选中态（#27：键盘选择要有明显区分）。</summary>
     private void DocHover()
     {
         if (_docs.Count == 0) return;
@@ -358,9 +371,18 @@ public partial class StorySceneBase : Node2D
         for (int i = 0; i < _docs.Count; i++)
         {
             var d = _docs[i];
-            bool on = d.Box.HasPoint(m) || i == _docSel;
-            d.Sb.BgColor = on ? new Color(0.2f, 0.195f, 0.185f, 0.98f)
-                              : new Color(0.145f, 0.14f, 0.135f, 0.97f);
+            bool sel = i == _docSel, hov = d.Box.HasPoint(m);
+            d.Sb.BgColor = sel ? new Color(0.28f, 0.24f, 0.15f, 0.99f)
+                        : hov ? new Color(0.19f, 0.18f, 0.16f, 0.98f)
+                              : new Color(0.13f, 0.125f, 0.12f, 0.96f);
+            d.Sb.BorderColor = sel ? new Color(0.98f, 0.82f, 0.45f)
+                            : hov ? new Color(0.7f, 0.64f, 0.5f, 0.7f)
+                                  : new Color(0.45f, 0.41f, 0.34f, 0.45f);
+            foreach (var side in new[] { Side.Left, Side.Right, Side.Top, Side.Bottom })
+                d.Sb.SetBorderWidth(side, sel ? 2 : 1);
+            if (d.Mark != null) d.Mark.Color = sel ? new Color(0.98f, 0.82f, 0.45f) : new Color(0, 0, 0, 0);
+            if (d.Title != null) d.Title.AddThemeColorOverride("font_color",
+                sel ? new Color(0.99f, 0.92f, 0.66f) : new Color(0.92f, 0.9f, 0.86f));
         }
     }
 

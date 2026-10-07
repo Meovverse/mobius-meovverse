@@ -44,23 +44,27 @@ public partial class Ch09 : StorySceneBase
         var dot = ResourceLoader.Load<Texture2D>("res://assets/textures/red_point.png");
         var lineCol = new Color(0.62f, 0.22f, 0.16f);
 
-        for (int i = 0; i < Items.Length; i++)
+        // #31：红点**错落有致**地落在信纸本体上（不再笔直两列）；六个选项的
+        // 视觉位置与"正确先后"**打乱**——你在屏幕上按内容判断，而不是按位置顺序。
+        float[] dotX   = { 232, 398, 270, 360, 218, 420 };
+        float[] dotY   = { 120,  88, 210, 158, 272, 250 };
+        float[] labelY = {  96,  90, 178, 176, 262, 268 };
+        int[]   perm   = { 2, 5, 0, 3, 1, 4 };   // 槽位 → 事情索引（乱序）
+
+        for (int s = 0; s < 6; s++)
         {
-            bool right = i % 2 == 1;              // 交错分列，左右各三
-            int col = i / 2;                      // 第几行（0 上 / 1 中 / 2 下）
-            float lineY = 104 + col * 92;
+            int idx = perm[s];
+            bool right = s % 2 == 1;
+            float lineY = labelY[s];
+            float dx = dotX[s], dy = dotY[s];
+            float elbowX = right ? 462 : 178;
+            float outX = right ? 622 : 18;
 
-            float elbowX = right ? 452 : 188;     // 折点
-            float outX = right ? 620 : 20;        // 水平线外端
-            float dotX = right ? 424 : 216;       // 红点扎在信纸上
-            float dotY = lineY + 16;
-
-            // 红点
             if (dot != null)
-                AddChild(new Sprite2D { Texture = dot, Position = new Vector2(dotX, dotY),
-                                        Scale = new Vector2(0.055f, 0.055f) });
+                AddChild(new Sprite2D { Texture = dot, Position = new Vector2(dx, dy),
+                                        Scale = new Vector2(0.07f, 0.07f) });
             // 折线：斜线（红点→折点）+ 水平线（折点→外端）
-            AddChild(new Line2D { Points = new[] { new Vector2(dotX, dotY), new Vector2(elbowX, lineY), new Vector2(outX, lineY) },
+            AddChild(new Line2D { Points = new[] { new Vector2(dx, dy), new Vector2(elbowX, lineY), new Vector2(outX, lineY) },
                                   Width = 1.4f, DefaultColor = lineCol, Antialiased = false });
 
             // 文本写在水平线上（靠外端一侧），可点击当作"选它"。
@@ -69,12 +73,11 @@ public partial class Ch09 : StorySceneBase
             //   明显），换行与对齐全部失效——盒子才是可靠的宽度约束。
             float tw = right ? outX - elbowX - 6 : elbowX - outX - 4;
             float tx = right ? elbowX + 4 : outX;
-            int idx = i;
             var box = new Control { Position = new Vector2(tx, lineY - 54), Size = new Vector2(tw, 52),
                                     MouseFilter = Control.MouseFilterEnum.Stop };
             var lb = new Label
             {
-                Text = Items[i].what,
+                Text = Items[idx].what,
                 AutowrapMode = TextServer.AutowrapMode.Arbitrary,   // 中文无空格，必须任意处断行
                 VerticalAlignment = VerticalAlignment.Bottom,
                 HorizontalAlignment = right ? HorizontalAlignment.Left : HorizontalAlignment.Right,

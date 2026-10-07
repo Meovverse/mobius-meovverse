@@ -21,6 +21,11 @@ public partial class SceneShot : Node
 
         var ps = ResourceLoader.Load<PackedScene>(scene);
         if (ps == null) { GD.PrintErr($"[shot] 找不到场景：{scene}"); GetTree().Quit(1); return; }
+        if (scene.Contains("EndingCard"))   // 结局卡文本是静态字段，截图前先填
+        {
+            MoShi.Game.EndingCard.Title = "结局三 · 妥协";
+            MoShi.Game.EndingCard.Theme = "知道真相，却选择沉默。";
+        }
         AddChild(ps.Instantiate());
         GD.Print($"[shot] 场景＝{scene}");
     }
