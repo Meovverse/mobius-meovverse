@@ -16,6 +16,7 @@ public partial class Credits : Node2D
     public override void _Ready()
     {
         MenuHud.Ensure(GetTree(), null, false);   // 名单页不带返回钮（HUD 常驻 Root，得显式隐藏）
+        AudioIndex.StopBgm();                      // 名单页只放 ending_theme
         AddChild(new ColorRect { Color = new Color(0, 0, 0), Size = new Vector2(640, 360),
                                  MouseFilter = Control.MouseFilterEnum.Ignore });
 

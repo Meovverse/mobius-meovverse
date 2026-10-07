@@ -52,7 +52,7 @@ public partial class IntegrationTest : Node
         var dbg = AssetIntake.Get("bg_shop_interior").GetImage();
         dbg.SavePng("res://data/gen/intake_dump.png");
         GD.Print("[dump] bg_shop_interior 实得 " + dbg.GetWidth() + "x" + dbg.GetHeight());
-        Check(SlotRegistry.Total == 83, $"槽位总数 {SlotRegistry.Total}");
+        Check(SlotRegistry.Total == 84, $"槽位总数 {SlotRegistry.Total}");
         int artNeed = 0;
         foreach (var s in SlotRegistry.All) if (s.NeedsArt) artNeed++;
         Check(artNeed == 1, $"待美术槽 {artNeed}（预期 1：仅剩档案室定景）");

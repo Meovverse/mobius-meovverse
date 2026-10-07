@@ -117,6 +117,10 @@ public static class AudioIndex
             "★ 新件，不在需求表内——'水泥碎屑'按住循环，用途请音频岗确认（按 loop_ 约定走 Ambience/S0）"),
         new("ending_theme",    "res://assets/audio/ending_theme.mp3",   Bus.Music, Tier.Music, -16.5f,
             "★ 通关制作名单 BGM（`Credits` 用；正文不响，只在名单页循环）"),
+        new("bgm_common_night", "res://assets/audio/bgm_common_night.ogg", Bus.Music, Tier.Music, -16.4f,
+            "★ 剧情 BGM：**给信封之前**（第一~六章）循环"),
+        new("bgm_rain",        "res://assets/audio/bgm_rain.ogg",        Bus.Music, Tier.Music, -16.4f,
+            "★ 剧情 BGM：**给信封之后**（第七章起）循环"),
         // 音频岗定：sfx_stone_grind **沿用 loop_chisel_run 的素材**（同一文件的两个 ID）。
         new("sfx_stone_grind", "res://assets/audio/loop_chisel_run.ogg", Bus.Sfx, Tier.S0, -20.8f,
             "沿用 loop_chisel_run 素材（2026-10-07 音频岗定）；作为一次性研磨声"),
@@ -326,6 +330,29 @@ public static class AudioIndex
         tw.TweenProperty(_music, "volume_db", -80f, fadeSec);
         tw.TweenCallback(Callable.From(_music.Stop));
     }
+
+    // ── 剧情 BGM（信封前 common night / 信封后 rain）──────────────────────
+
+    private static AudioStreamPlayer _bgm;
+    private static string _bgmId;
+
+    /// <summary>剧情背景乐：循环、Music 总线。已经是这一首就什么都不做（不重头、不卡顿）。</summary>
+    public static void Bgm(string id)
+    {
+        if (id == _bgmId && _bgm != null && _bgm.Playing) return;
+        var cue = Find(id); if (cue == null) return;
+        Host();
+        if (!_host.IsInsideTree()) { Callable.From(() => Bgm(id)).CallDeferred(); return; }
+        if (_bgm == null) { _bgm = new AudioStreamPlayer { Bus = BusName(Bus.Music) }; _host.AddChild(_bgm); }
+        var stream = Load(cue.File); if (stream == null) return;
+        SetLoop(stream);
+        _bgm.Stream = stream;
+        _bgm.VolumeDb = GainDb(cue);
+        _bgm.Play();
+        _bgmId = id;
+    }
+
+    public static void StopBgm() { _bgmId = null; if (_bgm != null) _bgm.Stop(); }
 
     /// <summary>停止环境音（黑屏/结局定格用）。</summary>
     public static void SilenceAmbience(float fadeSec = 2f)

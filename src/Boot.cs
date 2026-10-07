@@ -52,6 +52,7 @@ public partial class Boot : Control
             _ = Core.AssetIntake.Get(slot.Key);
         GD.Print(Core.AssetIntake.DumpReport());
         GD.Print(Core.AudioIndex.Audit());
+        Core.AudioIndex.StopBgm();   // 回标题：停掉剧情 BGM，只留标题曲
         Callable.From(Core.AudioIndex.PlayTitle).CallDeferred();
         GD.Print("[boot] 点击封面进入");
 

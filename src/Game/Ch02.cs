@@ -29,8 +29,12 @@ public partial class Ch02 : StorySceneBase
 
     private void ShowDeed()
     {
-        var deed = Plate("prop_deed_ledger", true); deed.Position = new Vector2(0, 120); deed.Modulate = new Color(1, 1, 1, 0.95f);
-        deed.Visible = false;
+        // 2026-10-07 新交付的「购买凭证」实拍文档（替代程序版 deed）
+        var tex = AssetIntake.Get("prop_purchase_receipt");
+        float k = tex.GetHeight() > 0 ? 306f / tex.GetHeight() : 1f;
+        var deed = new Sprite2D { Texture = tex, Centered = true, Position = new Vector2(VW / 2f, 178),
+                                  Scale = new Vector2(k, k), Modulate = new Color(1, 1, 1, 0.97f) };
+        AddChild(deed); deed.Visible = false;
         Subs(() =>
         {
             deed.Visible = true;

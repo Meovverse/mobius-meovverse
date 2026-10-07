@@ -23,6 +23,7 @@ public partial class EndingCard : Node2D
     public override void _Ready()
     {
         MenuHud.Ensure(GetTree(), null, false);   // 结局卡自成一体，不带返回钮
+        Core.AudioIndex.StopBgm();                 // 结局卡不叠剧情 BGM
         AddChild(new ColorRect { Color = new Color(0.02f, 0.02f, 0.025f), Size = new Vector2(640, 360) });
         _white = new ColorRect { Color = new Color(1, 1, 1, 0), Size = new Vector2(640, 360),
                                  MouseFilter = Control.MouseFilterEnum.Ignore };

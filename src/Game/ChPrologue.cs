@@ -27,13 +27,21 @@ public partial class ChPrologue : StorySceneBase
 
     private void ShowLedger()
     {
-        var card = new Panel { Position = new Vector2(170, 60), Size = new Vector2(300, 210), MouseFilter = Control.MouseFilterEnum.Ignore, ZIndex = 5 };
-        card.AddChild(new Label
+        // 2026-10-07 交付的「账本单页」实拍纸：垫在登记文字下面
+        var page = AssetIntake.Get("prop_ledger_page");
+        if (page != null)
         {
-            Position = new Vector2(28, 26),
+            float pk = page.GetHeight() > 0 ? 300f / page.GetHeight() : 1f;
+            AddChild(new Sprite2D { Texture = page, Centered = true, Position = new Vector2(VW / 2f, 170),
+                                    Scale = new Vector2(pk, pk), ZIndex = 5 });
+        }
+        var txt = new Label
+        {
+            Position = new Vector2(VW / 2f - 100, 52), Size = new Vector2(200, 220),
             Text = "墓位号    A 区 7 号\n姓名      苏兰\n材料日期   2006-05-17\n刻字日期   2006-05-17\n经办人    老吴",
-        });
-        Ui.AddChild(card);
+        };
+        txt.AddThemeColorOverride("font_color", new Color(0.20f, 0.14f, 0.09f));   // 墨字写在纸上
+        Ui.AddChild(txt);
         Sfx("sfx_pen_write");
         Subs(() =>
         {

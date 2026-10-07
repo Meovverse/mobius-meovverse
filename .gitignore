@@ -15,3 +15,5 @@ __pycache__/
 raw/
 palette_*.png
 palette_*.gpl
+# BGM 源 WAV（已转 ogg，不跟踪）
+assets/audio/bgm_*.wav

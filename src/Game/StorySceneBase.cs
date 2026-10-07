@@ -52,9 +52,10 @@ public partial class StorySceneBase : Node2D
         MenuHud.Ensure(GetTree(),
             MenuHud.LabelFor(string.IsNullOrEmpty(sf) ? GetType().Name + ".tscn" : sf), true);
         SceneReady();
-        // 环境音（Natsume#10）：本章没主动 Ambient() 的，默认小声铺 `amb_common_night`
-        // （通用夜环境，Amb 档 −30，压得很低）。要真的静场就显式 `Ambient("")`。
-        if (_ambId == null) AudioIndex.Ambience("amb_common_night");
+        // 环境音：本章没主动 Ambient() 的静场（专用环境音各自播）。
+        if (_ambId == null) AudioIndex.SilenceAmbience();
+        // 剧情 BGM（Natsume#10 的正主）：给信封前 common night、之后 rain——以 Clue15（六章末）为分界。
+        AudioIndex.Bgm(Save.Has(RunState.Flag.Clue15) ? "bgm_rain" : "bgm_common_night");
     }
 
     protected virtual void SceneReady() { }

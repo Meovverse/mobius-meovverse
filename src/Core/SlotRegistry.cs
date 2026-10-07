@@ -229,6 +229,8 @@ public static class SlotRegistry
             () => Art.PropToolbox(160, 100), false, "程序生成：石粉罐必须可辨认");
         Add("prop_deed_ledger", 300, 360, AssetIntake.Kind.Pixel, 10, false,
             () => Art.PropDeedLedger(300, 360), false, "程序生成。★ 压深的那一行是玩法");
+        Add("prop_purchase_receipt", 512, 341, AssetIntake.Kind.Pixel, 12, false, () => null!, false,
+            "购买凭证（原 1920×1280，带红章）。2026-10-07 交付；第二章「墓位购买记录」用它");
         Add("prop_archive_form", 280, 200, AssetIntake.Kind.Pixel, 10, false,
             () => Art.PropArchiveForm(280, 200), false, "程序生成：明显更白 + 盖章位");
 
