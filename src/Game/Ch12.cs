@@ -19,7 +19,7 @@ public partial class Ch12 : StorySceneBase
         Plate("bg_cemetery_qingming");
         Ambient("amb_graveyard");
         Raw("res://assets/textures/char_luyun_back.png", new Vector2(320, 260));
-        _hud = new Label { Position = new Vector2(200, 320), Size = new Vector2(280, 30),
+        _hud = new Label { Position = new Vector2(200, 278), Size = new Vector2(280, 30),
                            Text = "Enter：凿" };
         Ui.AddChild(_hud);
         _dust = new ColorRect { Color = new Color(0.8f, 0.78f, 0.72f, 0f),
@@ -34,13 +34,16 @@ public partial class Ch12 : StorySceneBase
 
     private void Hit()
     {
-        if (_chisel >= ChiselTotal) { Reveal(); return; }
+        if (_revealed) return;
         Sfx(_chisel % 2 == 0 ? "sfx_hammer_swing" : "sfx_hammer_chisel");
         _dust.Color = new Color(0.8f, 0.78f, 0.72f, 0.35f);
         var tw = CreateTween();
         tw.TweenProperty(_dust, "color:a", 0f, 0.9f);
         _chisel++;
         _hud.Text = $"Enter：凿（{_chisel}/{ChiselTotal}）";
+        // Citrate#48：原来只有"再按一下"才会揭底，可 _UnhandledInput 又把 _chisel>=6 的
+        // 输入挡掉了 → 永远揭不了底。改成第 6 锤落下即揭底。
+        if (_chisel >= ChiselTotal) Reveal();
     }
 
     // demo 版：Enter 连续敲也可（正式版锁节奏 = 每锤间隔）
@@ -50,8 +53,12 @@ public partial class Ch12 : StorySceneBase
         base._UnhandledInput(e);
     }
 
+    private bool _revealed;
+
     private void Reveal()
     {
+        if (_revealed) return;
+        _revealed = true;
         Sfx("sfx_base_crack");
         var card = new Panel { Position = new Vector2(150, 80), Size = new Vector2(340, 150), MouseFilter = Control.MouseFilterEnum.Ignore };
         card.AddChild(new Label { Position = new Vector2(20, 14), Text =

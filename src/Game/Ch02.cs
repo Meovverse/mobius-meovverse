@@ -65,12 +65,13 @@ public partial class Ch02 : StorySceneBase
                 End("他量了两行日期之间的跨度。二十一天。");
                 break;
             default:
-                End(Save.EndingOneFired
-                    ? "结局一 · 没发现碑的问题——真相就在眼前，但你没有看见。"
-                    : "你现在相信的\"事实\"，可能正是凶手希望你相信的。");
-                    if (Save.EndingOneFired)
-            { EndingCard.Open(GetTree(), "结局一 · 没发现碑的问题", "真相就在眼前，但你没有看见。"); return; }
-                Gate();   // 没触发结局一：资料收回桌上，重新摆开
+                if (Save.EndingOneFired)
+                {
+                    EndingCard.Open(GetTree(), "结局一 · 没发现碑的问题", "真相就在眼前，但你没有看见。");
+                    return;
+                }
+                // Citrate#44：冷话先说完、再重新摆资料卡——否则字幕会被卡片压住
+                Subs(Gate, "你现在相信的\"事实\"，可能正是凶手希望你相信的。");
                 return;
         }
     }

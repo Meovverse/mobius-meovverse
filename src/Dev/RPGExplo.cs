@@ -75,6 +75,7 @@ public partial class RPGExplo : Node2D
 
         BuildWalkMask();
         CloseGaps();               // 先愈合抖动凹口
+        FillHoles(12000);          // #43：再填内部小孔（路面上的装饰/杂点不再咬出卡点）
         SpawnTrees();              // 树精灵按美术遮罩清单进 Y-Sort（须在 _qingming 赋值之后）
         ErodeFootprint();          // 侵蚀必须放在所有改路面之后
         _start = NearestSafe(Spawn);
@@ -229,6 +230,38 @@ public partial class RPGExplo : Node2D
             }
         }
         return dst;
+    }
+
+    /// <summary>#43：填被路面包住的内部小孔（边缘洪泛 + 只填小孔），去掉路上的卡点。</summary>
+    void FillHoles(int maxHole)
+    {
+        int w = _mw, h = _mh;
+        var reach = new bool[_walk.Length];
+        var q = new Queue<int>();
+        void Seed(int i) { if (!_walk[i] && !reach[i]) { reach[i] = true; q.Enqueue(i); } }
+        for (int x = 0; x < w; x++) { Seed(x); Seed((h - 1) * w + x); }
+        for (int y = 0; y < h; y++) { Seed(y * w); Seed(y * w + w - 1); }
+        while (q.Count > 0)
+        {
+            int c = q.Dequeue(); int cx = c % w, cy = c / w;
+            if (cx > 0) Seed(c - 1); if (cx < w - 1) Seed(c + 1);
+            if (cy > 0) Seed(c - w); if (cy < h - 1) Seed(c + w);
+        }
+        var vis = new bool[_walk.Length];
+        for (int i = 0; i < _walk.Length; i++)
+        {
+            if (_walk[i] || reach[i] || vis[i]) continue;
+            var comp = new List<int>(); var dq = new Queue<int>(); dq.Enqueue(i); vis[i] = true;
+            while (dq.Count > 0)
+            {
+                int c = dq.Dequeue(); comp.Add(c); int cx = c % w, cy = c / w;
+                if (cx > 0 && !vis[c - 1] && !_walk[c - 1] && !reach[c - 1]) { vis[c - 1] = true; dq.Enqueue(c - 1); }
+                if (cx < w - 1 && !vis[c + 1] && !_walk[c + 1] && !reach[c + 1]) { vis[c + 1] = true; dq.Enqueue(c + 1); }
+                if (cy > 0 && !vis[c - w] && !_walk[c - w] && !reach[c - w]) { vis[c - w] = true; dq.Enqueue(c - w); }
+                if (cy < h - 1 && !vis[c + w] && !_walk[c + w] && !reach[c + w]) { vis[c + w] = true; dq.Enqueue(c + w); }
+            }
+            if (comp.Count <= maxHole) foreach (var c in comp) _walk[c] = true;
+        }
     }
 
     bool[] Erode(bool[] src, int r)
