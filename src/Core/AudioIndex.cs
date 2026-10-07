@@ -76,7 +76,7 @@ public static class AudioIndex
         new("sfx_paper_slide",  "res://assets/audio/sfx_paper_slide.wav",  Bus.Sfx, Tier.S1, -14.5f,
             "响度达标。全长 1.97s、有效仅 0.34s——'摩擦的起点和停'的起点段疑似被掐，复听"),
         new("sfx_page_turn",    "res://assets/audio/sfx_page_turn.wav",    Bus.Sfx, Tier.S1, -14.5f,
-            "★ 5.94s vs 需求 0.6s——多 take 连交了吧？需要音频岗裁一刀；峰值又偏轻。暂不接入播放"),
+            "2026-10-07 重交：已裁到 0.75s（原 5.94s），归一化 -14.5"),
         new("sfx_pen_write",    "res://assets/audio/sfx_pen_write.wav",    Bus.Sfx, Tier.S1, -14.5f,
             "时长 1.18s 合理；偏轻 8.9dB（补偿只压不抬，等重导补齐）"),
         // ── 第三批交付（merge c05d768，11 件 B_/C_/D_ 前缀 → 已全部转规范名）。
@@ -84,7 +84,7 @@ public static class AudioIndex
         new("sfx_write_confirm", "res://assets/audio/sfx_write_confirm.wav", Bus.Sfx, Tier.S1, -14.5f, "账本落笔确认。达标"),
         new("sfx_paper_tear",    "res://assets/audio/sfx_paper_tear.wav",    Bus.Sfx, Tier.S2, -8.5f, "超 S2 档 1.5dB，播放端压回"),
         new("sfx_paper_burn",    "res://assets/audio/sfx_paper_burn.wav",    Bus.Sfx, Tier.S2, -8.5f,
-            "★ 需求 2.0s 实交 5.96s（有效 4.28s）、还偏轻 13dB——请复听裁剪"),
+            "2026-10-07 重交：已裁到 2.36s（原 5.96s），归一化 -8.5"),
         new("sfx_caliper_lock",  "res://assets/audio/sfx_caliper_lock.wav",  Bus.Sfx, Tier.S1, -14.5f, "超档 6.7dB；'咔'短促达标"),
         new("sfx_hammer_chisel", "res://assets/audio/sfx_hammer_chisel.wav", Bus.Sfx, Tier.S2, -8.5f,
             "★ 需求 0.4s 实交有效 2.89s——多敲了几下？单发请裁"),
