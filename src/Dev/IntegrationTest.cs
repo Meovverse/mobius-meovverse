@@ -55,7 +55,7 @@ public partial class IntegrationTest : Node
         Check(SlotRegistry.Total == 84, $"槽位总数 {SlotRegistry.Total}");
         int artNeed = 0;
         foreach (var s in SlotRegistry.All) if (s.NeedsArt) artNeed++;
-        Check(artNeed == 1, $"待美术槽 {artNeed}（预期 1：仅剩档案室定景）");
+        Check(artNeed == 0, $"待美术槽 {artNeed}（全部美术已交付）");
 
         foreach (var c in AudioIndex.Delivered)
             Check(ResourceLoader.Exists(c.File), $"音频在库：{c.Id}");

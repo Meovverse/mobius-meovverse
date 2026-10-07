@@ -194,7 +194,7 @@ public static class SlotRegistry
         Add("bg_office_desk", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgOffice(640, 360), false, "★ 已交付（2026-10-07，2368×1760→接管层缩到 640×360）：二章查档特写用它");
         Add("bg_archive_room", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgArchive(640, 360), true, "★ 几百个格架；俯视整图 map_archive 已入库");
+            () => Art.BgArchive(640, 360), false, "★ 已交付（2026-10-07）：档案室定景，四/五章用");
         Add("bg_shop_front", 640, 360, AssetIntake.Kind.Background, 16, false,
             () => Art.BgShop(640, 360), false, "程序生成：卷帘门条纹 + 地上石粉");
         // ★ 新增：P1 铺子内景。S1/S14/S15/S16/S20 五场共用，是复用面最大的一张
