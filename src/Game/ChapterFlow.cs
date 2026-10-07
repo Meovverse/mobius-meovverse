@@ -17,8 +17,8 @@ public static class ChapterFlow
     {
         if (scenePath.EndsWith("ChPrologue.tscn")) return "序章 · 石头不会撒谎";
         if (scenePath.EndsWith("Ch01.tscn")) return "第一章 · 碑上的名字";
-        if (scenePath.EndsWith("Ch02.tscn")) return "第二章 · 查档";
-        if (scenePath.EndsWith("Ch03.tscn")) return "第三章 · 两个日期";
+        if (scenePath.EndsWith("Ch02.tscn") || scenePath.EndsWith("RpgOffice.tscn")) return "第二章 · 查档";
+        if (scenePath.EndsWith("Ch03.tscn") || scenePath.EndsWith("RpgShop.tscn")) return "第三章 · 两个日期";
         if (scenePath.EndsWith("Ch04.tscn")) return "第四章 · 韩梅";
         if (scenePath.EndsWith("Ch05.tscn")) return "第五章 · 死者韩湘";
         if (scenePath.EndsWith("Ch06.tscn")) return "第六章 · 石料";
@@ -38,8 +38,8 @@ public static class ChapterFlow
         var s = RunState.Load();
         if (!s.Has(RunState.Flag.Clue16)) return "res://scenes/ChPrologue.tscn";
         if (!s.Has(RunState.Flag.StoneAltered) && !s.Has(RunState.Flag.Clue02)) return "res://scenes/Ch01.tscn";
-        if (!s.Has(RunState.Flag.Clue05) && s.GetChoice(2) != 'C') return "res://scenes/Ch02.tscn";
-        if (!s.Has(RunState.Flag.Clue06)) return "res://scenes/Ch03.tscn";
+        if (!s.Has(RunState.Flag.Clue05) && s.GetChoice(2) != 'C') return "res://scenes/RpgOffice.tscn";
+        if (!s.Has(RunState.Flag.Clue06)) return "res://scenes/RpgShop.tscn";
         if (!s.Has(RunState.Flag.Clue10)) return "res://scenes/Ch04.tscn";
         if (!s.Has(RunState.Flag.Clue13)) return "res://scenes/Ch05.tscn";
         if (!s.Has(RunState.Flag.Clue15)) return "res://scenes/Ch06.tscn";

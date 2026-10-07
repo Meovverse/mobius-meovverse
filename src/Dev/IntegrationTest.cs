@@ -141,7 +141,7 @@ public partial class IntegrationTest : Node
     {
         // 章节场景烟测：加载 + 跑 60 帧不出脚本错误即过（错误由 Godot 打 ERROR 行，
         // 这里只保证不崩；崩溃级会直接抛出）。
-        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn", "res://scenes/Ch03.tscn", "res://scenes/Ch04.tscn", "res://scenes/Ch05.tscn", "res://scenes/Ch06.tscn", "res://scenes/Ch07.tscn", "res://scenes/Ch08.tscn", "res://scenes/Ch09.tscn", "res://scenes/Ch10.tscn", "res://scenes/Ch11.tscn", "res://scenes/EndingCard.tscn" })
+        foreach (var scn in new[] { "res://scenes/ChPrologue.tscn", "res://scenes/Ch02.tscn", "res://scenes/Ch03.tscn", "res://scenes/Ch04.tscn", "res://scenes/Ch05.tscn", "res://scenes/Ch06.tscn", "res://scenes/Ch07.tscn", "res://scenes/Ch08.tscn", "res://scenes/Ch09.tscn", "res://scenes/Ch10.tscn", "res://scenes/Ch11.tscn", "res://scenes/EndingCard.tscn", "res://scenes/RpgOffice.tscn", "res://scenes/RpgShop.tscn" })
         {
             if (!GodotObject.IsInstanceValid(this)) return;   // 序章等场景的自动换场可能波及测试树
             // 直接实例化场景根（.tscn 的脚本在 StorySceneBase 下）
@@ -172,7 +172,7 @@ public partial class IntegrationTest : Node
         var s = new RunState(); s.Set(RunState.Flag.Clue16); s.Save();
         Check(ChapterFlow.Next().EndsWith("Ch01.tscn"), "路由：有序章 → 一章");
         s = RunState.Load(); s.Set(RunState.Flag.Clue01); s.Set(RunState.Flag.StoneAltered); s.Save();
-        Check(ChapterFlow.Next().EndsWith("Ch02.tscn"), "路由：有一章 → 二章");
+        Check(ChapterFlow.Next().EndsWith("RpgOffice.tscn"), "路由：有一章 → 二章（实验：先进办公室走位段）");
         // 直接推到终章
         s = new RunState();
         s.Set(RunState.Flag.Clue16); s.Set(RunState.Flag.Clue01); s.Set(RunState.Flag.StoneAltered);
