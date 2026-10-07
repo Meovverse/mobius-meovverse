@@ -1,4 +1,3 @@
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using Godot;
@@ -526,4 +525,3 @@ public partial class Beacon : Node2D
                     new[] { new Color(1f, 0.98f, 0.9f, 1f) });
     }
 }
-#endif

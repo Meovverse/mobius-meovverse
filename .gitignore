@@ -17,3 +17,6 @@ palette_*.png
 palette_*.gpl
 # BGM 源 WAV（已转 ogg，不跟踪）
 assets/audio/bgm_*.wav
+
+# 导出产物
+build/
