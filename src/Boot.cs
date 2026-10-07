@@ -37,6 +37,12 @@ public partial class Boot : Control
         var titleTex = ResourceLoader.Load<Texture2D>("res://assets/textures/bg_title.png");
         if (titleTex != null)
             AddChild(new Sprite2D { Texture = titleTex, Centered = false, Scale = new Vector2(0.5f, 0.5f) });
+        // 队标（标题左上角）：美术交付的白色字标，原图底部有大片透明留白——只取内容区。
+        var logo = ResourceLoader.Load<Texture2D>("res://assets/textures/logo_team_white.png");
+        if (logo != null)
+            AddChild(new Sprite2D { Texture = logo, Centered = false, Position = new Vector2(16, 12),
+                                    RegionEnabled = true, RegionRect = new Rect2(11, 170, 142, 24),
+                                    Scale = new Vector2(0.9f, 0.9f) });
         _white = new ColorRect { Color = new Color(1, 1, 1, 0), MouseFilter = MouseFilterEnum.Ignore,
                                  Size = new Vector2(ViewportWidth, ViewportHeight) };
         AddChild(_white);
