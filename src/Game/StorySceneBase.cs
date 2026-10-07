@@ -52,16 +52,21 @@ public partial class StorySceneBase : Node2D
         MenuHud.Ensure(GetTree(),
             MenuHud.LabelFor(string.IsNullOrEmpty(sf) ? GetType().Name + ".tscn" : sf), true);
         SceneReady();
-        // 环境音：本章若没主动 Ambient()，就把上一章的环境淡出——环境播放器常驻
-        // Root，不显式关会一直漏到后面所有章节。
-        if (_ambId == null) AudioIndex.SilenceAmbience();
+        // 环境音（Natsume#10）：本章没主动 Ambient() 的，默认小声铺 `amb_common_night`
+        // （通用夜环境，Amb 档 −30，压得很低）。要真的静场就显式 `Ambient("")`。
+        if (_ambId == null) AudioIndex.Ambience("amb_common_night");
     }
 
     protected virtual void SceneReady() { }
 
     private string _ambId;
-    /// <summary>设本章环境音（2s 交叉淡化）。不调用 = 本章无环境，_Ready 末自动静音。</summary>
-    protected void Ambient(string id) { _ambId = id; AudioIndex.Ambience(id); }
+    /// <summary>设本章环境音（2s 交叉淡化）。不调用=用默认 `amb_common_night`；传 ""=显式静场。</summary>
+    protected void Ambient(string id)
+    {
+        _ambId = id ?? "";
+        if (string.IsNullOrEmpty(id)) AudioIndex.SilenceAmbience();
+        else AudioIndex.Ambience(id);
+    }
 
     // ── 图版 ────────────────────────────────────────────────────────────
 
