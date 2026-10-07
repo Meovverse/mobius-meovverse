@@ -424,7 +424,7 @@ public partial class Ch01 : Node2D
         _save.Set(RunState.Flag.Clue02); _save.SetChoice(1, 'B');
         _save.Ledger.Add(new LedgerLine { Text = "系统里那两行都是五月十七。碑上刻的是十六。" });
         _save.Save();
-        _tip.Text = "线索 02 · 墓园系统记录 5·17。（第二章从这里接）\n按 Enter 回墓道。";
+        _tip.Text = "线索 02 · 墓园系统记录 5·17。（第二章从这里接）\n按 Enter 继续。";
         _phase = Phase.Ended;
     }
 

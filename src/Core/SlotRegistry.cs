@@ -125,10 +125,10 @@ public static class SlotRegistry
 
         // ── C 背景：程序版能跑但很平。美术做这几张性价比最高 ──
         Add("bg_graveyard_area_A", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgGraveyard(640, 360), true,
-            "远景=地图/墓地.png 顶部横带重处理，中景=抠出的真碑；石头质感仍要人/SD");
+            () => Art.BgGraveyard(640, 360), false,
+            "★ 已交付（2026-10-07）。注：现在墓园走俯视 RPG、一章是满屏程序化碑面，此定景暂无场景挂载");
         Add("bg_cemetery_qingming", 640, 360, AssetIntake.Kind.Background, 16, false,
-            () => Art.BgGraveyard(640, 360), true, "★ 同上；俯视整图 map_graveyard_qingming 已入库在用（RPG 层）");
+            () => Art.BgGraveyard(640, 360), false, "★ 已交付（2026-10-07）：第十二章清明定景 Plate 用它");
 
         // ── 从 地图/墓地.png 复用出来的素材。都是已抠好的可用资源 ──
         Add("bg_graveyard_far", 640, 224, AssetIntake.Kind.Pixel, 12, true,

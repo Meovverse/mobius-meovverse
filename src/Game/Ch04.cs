@@ -49,5 +49,5 @@ public partial class Ch04 : StorySceneBase
         Go("一名已经掌握苏航秘密的会计，在苏兰死后突然消失。这很可能不是另一件案子。");
     }
     private void Go(string line) =>
-        Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（回墓道。）");
+        Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（继续。）");
 }

@@ -68,5 +68,5 @@ public partial class Ch05 : StorySceneBase
         EndingCard.Open(GetTree(), "结局二 · 被隐藏的身份",
             "最危险的伪造，不是造一个假人，而是让一个死人替活人承担身份。");
     private void Go(string line) =>
-        Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（回墓道。）");
+        Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（继续。）");
 }

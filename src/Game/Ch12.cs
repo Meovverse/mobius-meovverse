@@ -20,7 +20,7 @@ public partial class Ch12 : StorySceneBase
         Ambient("amb_graveyard");
         Raw("res://assets/textures/char_luyun_back.png", new Vector2(320, 260));
         _hud = new Label { Position = new Vector2(200, 278), Size = new Vector2(280, 30),
-                           Text = "Enter：凿" };
+                           Text = "Enter / 空格：凿" };
         Ui.AddChild(_hud);
         _dust = new ColorRect { Color = new Color(0.8f, 0.78f, 0.72f, 0f),
                                 Position = new Vector2(280, 300), Size = new Vector2(120, 20) };
@@ -40,7 +40,7 @@ public partial class Ch12 : StorySceneBase
         var tw = CreateTween();
         tw.TweenProperty(_dust, "color:a", 0f, 0.9f);
         _chisel++;
-        _hud.Text = $"Enter：凿（{_chisel}/{ChiselTotal}）";
+        _hud.Text = $"Enter / 空格：凿（{_chisel}/{ChiselTotal}）";
         // Citrate#48：原来只有"再按一下"才会揭底，可 _UnhandledInput 又把 _chisel>=6 的
         // 输入挡掉了 → 永远揭不了底。改成第 6 锤落下即揭底。
         if (_chisel >= ChiselTotal) Reveal();

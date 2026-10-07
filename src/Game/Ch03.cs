@@ -63,5 +63,5 @@ public partial class Ch03 : StorySceneBase
     }
 
     private void Go(string line) =>
-        Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（回墓道。）");
+        Subs(() => GetTree().ChangeSceneToFile(ChapterFlow.Next()), line, "（继续。）");
 }
