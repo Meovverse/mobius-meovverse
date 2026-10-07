@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// S15 · 第九章 真相拼合：把九样线索按时间先后依次点出来。

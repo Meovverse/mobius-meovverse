@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>
 /// 成品的程序化资产。建立在 <see cref="ProcGen"/> 的图元之上。

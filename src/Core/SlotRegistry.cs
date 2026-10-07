@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>
 /// ★ 全项目的资产槽位登记表。

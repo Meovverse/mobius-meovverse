@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>
 /// 美术资产的运行时接管层。

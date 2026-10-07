@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Dev;
+namespace GraveCanTell.Dev;
 
 /// <summary>
 /// 墓园 RPG 走动式探索 —— 地图/墓地.png 直接当关卡，土路就是给脚走的。
@@ -43,7 +43,7 @@ public partial class RPGExplo : Node2D
 
     public override void _Ready()
     {
-        MoShi.Game.MenuHud.Ensure(GetTree(), "墓园 · 走访途中", true);
+        GraveCanTell.Game.MenuHud.Ensure(GetTree(), "墓园 · 走访途中", true);
         AudioIndex.Ambience("amb_graveyard");   // 2026 墓园环境（第五批交付）
         // 第二批美术交付了清明落成版（终章 P10）：和平时版只差 5.2% 像素。
         // ★ 但"加灰蓝雾"会让路色漂移，按颜色分路面直接失灵（实测路网少 18k px、
@@ -475,7 +475,7 @@ public partial class RPGExplo : Node2D
                 var cl = new CanvasLayer(); cl.AddChild(_prompt); AddChild(cl);
             }
             if (Input.IsActionJustPressed("ui_accept"))
-                GetTree().ChangeSceneToFile(MoShi.Game.ChapterFlow.Next());
+                GetTree().ChangeSceneToFile(GraveCanTell.Game.ChapterFlow.Next());
         }
         if (_frame == 8 && !_free) Shot("rpg_start");
         if (_frame == 150 && !_free) Shot("rpg_mid");

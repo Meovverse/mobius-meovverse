@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// S18 · 终章 立碑：砸底座。剧本要求 90 秒不跳过——jam 演示版压成 6 锤

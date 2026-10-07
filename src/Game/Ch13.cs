@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S19+S20 · 第十三章 + 真结局文本卡。</summary>
 public partial class Ch13 : StorySceneBase

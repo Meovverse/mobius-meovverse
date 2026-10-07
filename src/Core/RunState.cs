@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>玩家在这一周目里"记下"的东西。账本即存档 —— 这个对象就是 save.json。</summary>
 public sealed class RunState

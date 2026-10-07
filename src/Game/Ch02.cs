@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S8 · 第二章 查档：CRT 系统 → 日期矛盾 → 墓位成交 → 调查选择二。</summary>
 public partial class Ch02 : StorySceneBase

@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S12 · 第六章 石料：料单。无分支，一条线索。</summary>
 public partial class Ch06 : StorySceneBase

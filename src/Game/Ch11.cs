@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S17 · 第十一章 最后的选择：交警方并保留原件=A；B/C 给一句冷话然后退回。</summary>
 public partial class Ch11 : StorySceneBase

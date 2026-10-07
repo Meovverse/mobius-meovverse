@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S10 · 第四章 韩梅：账目发现 → 威胁 → 失踪。调查选择四。</summary>
 public partial class Ch04 : StorySceneBase

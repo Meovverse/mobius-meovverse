@@ -1,6 +1,6 @@
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// 章节路由：只认 flag，不认场景自己——任何场景问"现在该演哪出"都走这里。

@@ -1,6 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mobius-meovverse", "mobius-meovverse.csproj", "{89B8548C-F26F-462F-9715-704D45F5EDB7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraveCanTell", "GraveCanTell.csproj", "{89B8548C-F26F-462F-9715-704D45F5EDB7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

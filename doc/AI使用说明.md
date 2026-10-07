@@ -1,4 +1,4 @@
-# 墓时（Mobius Meovverse）· AI 使用说明
+# 墓时（Grave Can Tell）· AI 使用说明
 
 ## 一、是否使用 AI
 

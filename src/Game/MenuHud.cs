@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// 常驻 HUD（Citrate657 #5/#6）：右上角固定两样——当前章节名 + 「返回主菜单」。

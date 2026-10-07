@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>实验：第四章「韩梅」之前的走位段（map_archive_room，已裁掉透明区）。</summary>
 public partial class RpgArchive : RpgWalk

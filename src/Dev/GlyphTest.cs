@@ -1,8 +1,8 @@
 using System.Linq;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Dev;
+namespace GraveCanTell.Dev;
 
 /// <summary>
 /// M1 验收用的诊断场景。

@@ -9,7 +9,7 @@ GODOT="${GODOT:-/mnt/c/Users/wzt17/App/Godot_v4.7.2-stable_mono_win64/Godot_v4.7
 PROJ="$(wslpath -w "$ROOT" 2>/dev/null || echo "$ROOT")"
 
 echo "== 1/3 编译 =="
-"$DOTNET" build "$ROOT/mobius-meovverse.csproj" -v quiet --nologo 2>&1 | grep -E "error CS" && { echo "编译失败"; exit 1; }
+"$DOTNET" build "$ROOT/GraveCanTell.csproj" -v quiet --nologo 2>&1 | grep -E "error CS" && { echo "编译失败"; exit 1; }
 echo "   ok"
 
 echo "== 2/3 集成测试（68+ 断言：章节路由 / 擦描玩法 / 对话布局 / 音频闸门 / HUD）=="

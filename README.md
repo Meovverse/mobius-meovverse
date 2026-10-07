@@ -1,11 +1,11 @@
-Mobius Meovverse 内部协作指南
+Grave Can Tell 内部协作指南
 
 这是一个小组内部的游戏项目。  
 无论你之前有没有用过 Git，请先完整读一遍本文，再动手写代码。
 
 一、这个项目是什么
 
-- 项目名：Mobius Meovverse
+- 项目名：Grave Can Tell
 - 类型：小组内部游戏项目
 - 引擎 / 技术栈：godot
 
@@ -61,16 +61,16 @@ ssh -T git@github.com
 
 4. 获取仓库权限
 
-联系管理员，把你的 GitHub 账号加入 Meovverse 组织，并给 mobius-meovverse 仓库的 Write 权限。  
+联系管理员，把你的 GitHub 账号加入 Meovverse 组织，并给 GraveCanTell 仓库的 Write 权限。  
 没有 Write 权限时，推送会报 Write access to repository not granted。
 
 三、克隆仓库到本地
 
-git clone git@github.com:Meovverse/mobius-meovverse.git
-cd mobius-meovverse
+git clone git@github.com:Meovverse/GraveCanTell.git
+cd GraveCanTell
 
 如果你之前用 HTTPS 克隆过，建议改成 SSH：
-git remote set-url origin git@github.com:Meovverse/mobius-meovverse.git
+git remote set-url origin git@github.com:Meovverse/GraveCanTell.git
 
 四、日常开发流程（最重要，请照做）
 
@@ -114,7 +114,7 @@ git push -u origin feat/你的用户名-add-player-movement
 
 推送成功后，终端会显示一个链接，或者你直接打开：
 
-https://github.com/Meovverse/mobius-meovverse
+https://github.com/Meovverse/GraveCanTell
 
 会看到黄色提示条 Compare & pull request，点击它。
 

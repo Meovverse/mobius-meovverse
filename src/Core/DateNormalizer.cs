@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>账本上的一行。</summary>
 public sealed class LedgerLine

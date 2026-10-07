@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// M2 · 第一章垂直切片：「碑上的名字」前半段。

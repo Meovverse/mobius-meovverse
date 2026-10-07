@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Dev;
+namespace GraveCanTell.Dev;
 
 /// <summary>
 /// 场景底板预览。把 Program/Art 生成的背景原样写到 data/gen/preview_*.png，

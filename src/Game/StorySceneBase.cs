@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// 章节公共外壳：字幕卡 / 对话（对话框+头像）/ 调查选择热区 / 图版装载。

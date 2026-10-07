@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S11 · 第五章 死者韩湘：两个身份叠在一起。调查选择五（C=结局二）。</summary>
 public partial class Ch05 : StorySceneBase

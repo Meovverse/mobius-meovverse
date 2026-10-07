@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>
 /// 全部纹理的程序生成。

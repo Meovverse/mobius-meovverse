@@ -1,9 +1,9 @@
 using System;
 using Godot;
-using MoShi.Core;
-using MoShi.Game;
+using GraveCanTell.Core;
+using GraveCanTell.Game;
 
-namespace MoShi.Dev;
+namespace GraveCanTell.Dev;
 
 /// <summary>
 /// 集成测试（代替外部流程测试）。headless 跑：
@@ -26,7 +26,7 @@ public partial class IntegrationTest : Node
         // 真人反馈"标题进去直接跳到第五章"就是被测试污染的档。
         RunState.SavePath = "user://test_ledger.json";
         RunState.DeleteSave();
-        MoShi.Game.EndingCard.SuppressSceneChange = true;   // 测试不许触发真换场
+        GraveCanTell.Game.EndingCard.SuppressSceneChange = true;   // 测试不许触发真换场
         Run();
     }
 

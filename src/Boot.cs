@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MoShi;
+namespace GraveCanTell;
 
 /// <summary>
 /// 启动场景 / 全局入口。
@@ -24,7 +24,7 @@ public partial class Boot : Control
 
     public override void _Ready()
     {
-        MoShi.Game.MenuHud.Ensure(GetTree(), null, false);   // 标题本身就是菜单
+        GraveCanTell.Game.MenuHud.Ensure(GetTree(), null, false);   // 标题本身就是菜单
         // 复位渲染缓冲；运行期从不改 OS 窗口尺寸（丢焦教训见 git log）
         GetWindow().ContentScaleSize = new Vector2I(ViewportWidth, ViewportHeight);
 
@@ -121,7 +121,7 @@ public partial class Boot : Control
             _e2eTimer.Timeout += () =>
             {
                 var tree = (SceneTree)Engine.GetMainLoop();
-                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name + " musicPlaying=" + MoShi.Core.AudioIndex.TestMusicPlaying);
+                GD.Print("[e2e] after  scene=" + tree.CurrentScene?.Name + " musicPlaying=" + GraveCanTell.Core.AudioIndex.TestMusicPlaying);
                 tree.Quit();
             };
         }

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S9 · 第三章 两个日期：五张纸并排 → 只有碑不同 → 调查选择三。</summary>
 public partial class Ch03 : StorySceneBase

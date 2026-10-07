@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// 实验分支：**可复用的俯视走位段**（把 RPGExplo 抽象出来）。

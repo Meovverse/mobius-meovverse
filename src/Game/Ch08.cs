@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S14 · 第八章：什么时候报警。关键选择七。</summary>
 public partial class Ch08 : StorySceneBase

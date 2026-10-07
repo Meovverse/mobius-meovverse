@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>
 /// 碑面「A 区 7 号」的表面构建器。

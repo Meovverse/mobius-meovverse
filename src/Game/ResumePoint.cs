@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// 封面之后的分支屏：「桌前的账本」——继续 or 从头。
@@ -39,8 +39,8 @@ public partial class ResumePoint : Node2D
         _white = new ColorRect { Color = new Color(1, 1, 1, 0), Size = new Vector2(VW, VH),
                                  MouseFilter = Control.MouseFilterEnum.Ignore };
         AddChild(_white);
-        MoShi.Core.AudioIndex.StopTitle(1.0f);   // 保险：标题曲止于封面
-        MoShi.Game.MenuHud.Ensure(GetTree(), null, false);
+        GraveCanTell.Core.AudioIndex.StopTitle(1.0f);   // 保险：标题曲止于封面
+        GraveCanTell.Game.MenuHud.Ensure(GetTree(), null, false);
 
         _narr = Row(64, "桌上是那本旧账。写过的都还在。", 0.55f);
         if (_hasSave)

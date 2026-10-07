@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>
 /// 音频登记表 —— doc/音频岗需求.md 的机器可读版本，和 <see cref="SlotRegistry"/> 同构。

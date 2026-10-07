@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S13 · 第七章：信封与「韩梅呢？」。关键选择六。打字交互降级为两句可选台词（键盘输入 M2 之后接）。</summary>
 public partial class Ch07 : StorySceneBase

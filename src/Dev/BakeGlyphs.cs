@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Dev;
+namespace GraveCanTell.Dev;
 
 /// <summary>
 /// 字形烘焙工具（一次性，跑一次生成 PNG）。

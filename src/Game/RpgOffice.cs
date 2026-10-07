@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>实验：第二章「查档」之前的走位段（map_office）。走到电脑前按 Enter 进查档。</summary>
 public partial class RpgOffice : RpgWalk

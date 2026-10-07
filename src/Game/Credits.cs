@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>
 /// 通关后的制作人员名单：播 assets/videos/Ending.ogv（由美术交付的 Ending.mp4 转码，

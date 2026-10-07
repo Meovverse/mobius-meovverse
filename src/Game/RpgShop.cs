@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>实验：第三章「两个日期」之前的走位段（map_shop）。走到灯下按 Enter 进对照。</summary>
 public partial class RpgShop : RpgWalk

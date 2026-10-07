@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S1 · 序章（约 60 秒）：2006 定景 + 对话 + 登记本。无分支。</summary>
 public partial class ChPrologue : StorySceneBase

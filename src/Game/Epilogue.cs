@@ -1,7 +1,7 @@
 using Godot;
-using MoShi.Core;
+using GraveCanTell.Core;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S21 · 尾声 60 秒：新生意 → 「证明呢？」→ 两行日期 → 合上本子。</summary>
 public partial class Epilogue : StorySceneBase

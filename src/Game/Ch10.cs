@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MoShi.Game;
+namespace GraveCanTell.Game;
 
 /// <summary>S16 · 第十章 真相：纯演出（黑场 + 段落文本卡）。</summary>
 public partial class Ch10 : StorySceneBase

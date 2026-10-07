@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MoShi.Core;
+namespace GraveCanTell.Core;
 
 /// <summary>刻痕的"物理档案"。这一笔是哪一年刻的，只记录，不解释。</summary>
 public enum Batch
