@@ -10,7 +10,7 @@ public partial class RpgOffice : RpgWalk
     protected override Vector2 SpawnWorld => new(460, 640);
     protected override string[] Guidance => new[]
     {
-        "方向键走动　　走到「▼ 打开墓园系统」前，按 Enter",
+        "方向键走动　　走到「打开墓园系统」前，按 Enter",
     };
     protected override RpgTarget[] Targets => new[]
     {

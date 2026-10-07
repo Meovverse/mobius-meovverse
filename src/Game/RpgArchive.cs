@@ -10,7 +10,7 @@ public partial class RpgArchive : RpgWalk
     protected override Vector2 SpawnWorld => new(250, 340);
     protected override string[] Guidance => new[]
     {
-        "方向键走动　　走到「▼ 抽出那份卷宗」前，按 Enter",
+        "方向键走动　　走到「抽出那份卷宗」前，按 Enter",
     };
     protected override RpgTarget[] Targets => new[]
     {

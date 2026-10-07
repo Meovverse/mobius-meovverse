@@ -19,27 +19,30 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEX = os.path.join(ROOT, "assets", "textures")
 OUT = os.path.join(ROOT, "data", "gen")
 
-# 地图 → 障碍矩形 (x0,y0,x1,y1)，像素坐标（图内）
+# 地图 → (闭运算半径, 障碍矩形 (x0,y0,x1,y1))，像素坐标（图内）
+# ★ 必须"闭"(先膨胀后腐蚀)而不是"开"：木地板的木纹/阴影是被判成非可走的细线，
+#   开运算会把这些细线越撕越宽、把地板碎成几百块（实测办公室 529 块），玩家被
+#   困在小口袋里→"走动极其不流畅"。闭运算把细缝桥接起来，得到一整片连通地板。
 MAPS = {
-    "map_office": [
+    "map_office": (5, [
         (378, 236, 568, 408),   # 书柜
         (700, 285, 880, 625),   # 右侧石堆
         (25, 555, 325, 705),    # 左下石料
         (146, 230, 312, 418),   # 床
         (410, 420, 568, 512),   # 桌
-    ],
-    "map_shop": [
+    ]),
+    "map_shop": (3, [
         (378, 108, 1012, 568),  # 中央碑样品陈列台
         (0, 688, 300, 832),     # 左下账台
         (250, 758, 1152, 960),  # 底部碑阵
-    ],
-    "map_archive_room": [
+    ]),
+    "map_archive_room": (3, [
         (0, 0, 480, 88),        # 顶墙
         (78, 88, 480, 152),     # 顶层架
         (0, 0, 92, 588),        # 左墙/抽屉列
         (128, 225, 480, 308),   # 中层架
         (132, 368, 480, 588),   # 底层架
-    ],
+    ]),
 }
 
 
@@ -51,14 +54,14 @@ def warm(a):
     return warmish & ~gray & ~dark
 
 
-def gen(name, obstacles):
+def gen(name, radius, obstacles):
     src = os.path.join(TEX, name + ".png")
     a = np.asarray(Image.open(src).convert("RGB")).astype(int)
     m = warm(a)
     mi = Image.fromarray((m * 255).astype("uint8"))
-    # 形态学开（去碎点）→ 闭（补小洞）
-    mi = (mi.filter(ImageFilter.MinFilter(5)).filter(ImageFilter.MaxFilter(5))
-            .filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.MinFilter(5)))
+    # 闭运算：先把细缝桥接起来（地板连通），再轻微开一下去碎点
+    mi = (mi.filter(ImageFilter.MaxFilter(radius)).filter(ImageFilter.MinFilter(radius))
+            .filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3)))
     m = np.asarray(mi) > 128
     for x0, y0, x1, y1 in obstacles:
         m[max(0, y0):y1, max(0, x0):x1] = False
@@ -73,4 +76,5 @@ def gen(name, obstacles):
 if __name__ == "__main__":
     want = sys.argv[1:] or list(MAPS)
     for n in want:
-        gen(n, MAPS.get(n, []))
+        r, obs = MAPS.get(n, (3, []))
+        gen(n, r, obs)

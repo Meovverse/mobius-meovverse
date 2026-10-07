@@ -77,7 +77,7 @@ public partial class RpgWalk : Node2D
         {
             var beacon = new RpgBeacon { Position = t.Pos + new Vector2(0, -6) };
             AddChild(beacon);
-            var tag = new Label { Text = "▼ " + t.Label, Modulate = new Color(1, 0.97f, 0.85f) };
+            var tag = new Label { Text = t.Label, Modulate = new Color(1, 0.97f, 0.85f) };
             tag.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
             tag.AddThemeConstantOverride("shadow_offset_x", 1);
             tag.AddThemeConstantOverride("shadow_offset_y", 1);
@@ -106,11 +106,13 @@ public partial class RpgWalk : Node2D
         var maskTex = ResourceLoader.Exists(maskPath) ? ResourceLoader.Load<Texture2D>(maskPath) : null;
         if (maskTex != null)
         {
-            var mi = maskTex.GetImage(); mi.Convert(Image.Format.Rgb8);
+            var mi = maskTex.GetImage();
             if (mi.GetWidth() == _mw && mi.GetHeight() == _mh)
-                for (int y = 0; y < _mh; y++)
-                for (int x = 0; x < _mw; x++)
-                    walk[y * _mw + x] = mi.GetPixel(x, y).R > 0.5f;
+            {
+                mi.Convert(Image.Format.R8);        // 批量读像素，别逐格 GetPixel（几十万次会卡）
+                var px = mi.GetData();
+                for (int i = 0; i < px.Length && i < walk.Length; i++) walk[i] = px[i] > 128;
+            }
             else maskTex = null;
         }
         if (maskTex == null)   // 回退：颜色分类
@@ -126,7 +128,7 @@ public partial class RpgWalk : Node2D
         for (int x = 4; x < _mw - 4; x++)
         {
             bool ok = walk[y * _mw + x];
-            foreach (var (dx, dy) in new[] { (-4, 0), (4, 0), (0, 3), (0, -3) })
+            foreach (var (dx, dy) in new[] { (-4, 0), (4, 0), (0, 2), (0, -2) })
                 if (!walk[(y + dy) * _mw + (x + dx)]) { ok = false; break; }
             _safe[y * _mw + x] = ok;
         }

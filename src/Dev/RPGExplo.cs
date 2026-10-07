@@ -112,7 +112,7 @@ public partial class RPGExplo : Node2D
         AddChild(_marker);
         _beaconTag = new Label
         {
-            Text = "▼ A 区 7 号 · 苏兰墓",
+            Text = "A 区 7 号 · 苏兰墓",
             Modulate = new Color(1f, 0.97f, 0.85f, 0.95f),
         };
         _beaconTag.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
@@ -422,7 +422,7 @@ public partial class RPGExplo : Node2D
         {
             if (_prompt == null)
             {
-                _prompt = new Label { Position = new Vector2(0, 46), Size = new Vector2(640, 26),
+                _prompt = new Label { Position = new Vector2(0, 250), Size = new Vector2(640, 26),
                     HorizontalAlignment = HorizontalAlignment.Center, Text = "Enter：凑近看碑面" };
                 var cl = new CanvasLayer(); cl.AddChild(_prompt); AddChild(cl);
             }

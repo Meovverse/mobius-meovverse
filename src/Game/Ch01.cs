@@ -129,8 +129,18 @@ public partial class Ch01 : Node2D
 
     public override void _Notification(int what)
     {
-        // 离开场景务必把系统光标还回来
-        if (what == NotificationExitTree) Input.MouseMode = Input.MouseModeEnum.Visible;
+        // 离开场景务必把系统光标还回来（#36：按住循环也一并停）
+        if (what == NotificationExitTree)
+        {
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+            AudioIndex.StopHold();
+        }
+    }
+
+    /// <summary>#36：擦净/描完/选项时主动停掉按住循环——不然它会一直响到玩家松手。</summary>
+    void StopHolds()
+    {
+        if (_wipeHold || _traceHold) { _wipeHold = false; _traceHold = false; AudioIndex.StopHold(); }
     }
 
     public override void _Process(double delta)
@@ -199,6 +209,7 @@ public partial class Ch01 : Node2D
                 _dateSeen = 0;
                 if (DateDustMean() < 0.08f)
                 {
+                    StopHolds();   // #36：擦净即停，别等玩家松手
                     _phase = Phase.Choice; _hint.Text = "";
                     ShowGlow(true);
                     ShowCards();
@@ -394,6 +405,7 @@ public partial class Ch01 : Node2D
 
     void SixteenFound()
     {
+        StopHolds();
         AudioIndex.Sfx("sfx_trace_done");
         HideGlowCards();
         _save.Set(RunState.Flag.Clue01); _save.Set(RunState.Flag.StoneAltered);
@@ -406,6 +418,7 @@ public partial class Ch01 : Node2D
 
     void ChooseB()
     {
+        StopHolds();
         _save.Set(RunState.Flag.Clue02); _save.SetChoice(1, 'B');
         _save.Ledger.Add(new LedgerLine { Text = "系统里那两行都是五月十七。碑上刻的是十六。" });
         _save.Save();
@@ -415,6 +428,7 @@ public partial class Ch01 : Node2D
 
     void ChooseC()
     {
+        StopHolds();
         _save.SetChoice(1, 'C');
         _save.Save();
         HideGlowCards();
